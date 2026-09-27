@@ -6,8 +6,8 @@ namespace RogueLike.Items
 {
     // Reference implementation of the item-skill pattern: an item that,
     // while equipped, auto-fires a projectile at the nearest enemy on its
-    // own cooldown (same logic ActiveSkillRunner uses for level-up active
-    // skills, just owned entirely by the item instead of a central runner).
+    // own cooldown, entirely on its own — nothing outside this file drives
+    // the firing.
     //
     // To add a new item type, follow this shape: subclass ItemDefinition
     // with whatever data it needs, override CreateBehavior() to return a

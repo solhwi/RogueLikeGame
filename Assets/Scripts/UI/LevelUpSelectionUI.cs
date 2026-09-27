@@ -1,6 +1,5 @@
 using UnityEngine;
 using UnityEngine.UI;
-using RogueLike.Combat;
 using RogueLike.Core;
 using RogueLike.Managers;
 
@@ -45,7 +44,7 @@ namespace RogueLike.UI
 
         private void ShowChoices()
         {
-            var choices = runManager.GetSkillChoices();
+            var choices = runManager.GetItemChoices();
 
             for (int i = 0; i < choiceButtons.Length; i++)
             {
@@ -63,7 +62,7 @@ namespace RogueLike.UI
                 }
 
                 choiceButtons[i].onClick.RemoveAllListeners();
-                choiceButtons[i].onClick.AddListener(() => runManager.ChooseSkill(definition));
+                choiceButtons[i].onClick.AddListener(() => runManager.ChooseItem(definition));
             }
         }
     }

@@ -19,10 +19,10 @@ using RogueLike.UI;
 namespace RogueLike.EditorTools
 {
     /// <summary>
-    /// Builds a minimal playable slice of the roguelike conversion: one
-    /// active skill, two passives, one enemy type, one wave, one chapter,
-    /// wired into a scene so the core loop (move -> auto-attack -> gain XP
-    /// -> level up) can be tried immediately.
+    /// Builds a minimal playable slice of the roguelike conversion: a
+    /// starting item, two level-up item choices, one enemy type, one wave,
+    /// one chapter, wired into a scene so the core loop (move -> auto-attack
+    /// -> gain XP -> level up -> pick an item) can be tried immediately.
     /// </summary>
     public static class RoguelikeSceneBuilder
     {
@@ -70,22 +70,24 @@ namespace RogueLike.EditorTools
             var enemyPrefab = CreateEnemyPrefab(enemySprite, enemyLayer);
             var gemPrefab = CreateGemPrefab(gemSprite, lootLayer);
 
-            var basicShotIcon = CreateAndSaveSquareSprite("SkillIcon_BasicShot", new Color(0.95f, 0.65f, 0.20f));
-            var moveSpeedIcon = CreateAndSaveSquareSprite("SkillIcon_MoveSpeedUp", new Color(0.45f, 0.90f, 0.45f));
-            var magnetIcon = CreateAndSaveSquareSprite("SkillIcon_MagnetUp", new Color(0.75f, 0.45f, 0.95f));
-
-            var activeSkill = CreateBasicShotSkill(projectilePrefab, basicShotIcon, "전방으로 투사체를 발사한다.");
-            var moveSpeedSkill = CreatePassiveSkill("MoveSpeedUp", "Swift Boots", StatType.MoveSpeedMultiplier, 0.05f, moveSpeedIcon, "이동 속도가 증가한다.");
-            var magnetSkill = CreatePassiveSkill("MagnetUp", "Loot Magnet", StatType.PickupRange, 0.5f, magnetIcon, "아이템 획득 범위가 증가한다.");
-
+            var basicShotIcon = CreateAndSaveSquareSprite("ItemIcon_BasicShot", new Color(0.95f, 0.65f, 0.20f));
+            var moveSpeedIcon = CreateAndSaveSquareSprite("ItemIcon_MoveSpeedUp", new Color(0.45f, 0.90f, 0.45f));
+            var magnetIcon = CreateAndSaveSquareSprite("ItemIcon_MagnetUp", new Color(0.75f, 0.45f, 0.95f));
             var throwingKnifeIcon = CreateAndSaveSquareSprite("ItemIcon_ThrowingKnife", new Color(0.85f, 0.85f, 0.90f));
+
+            // Everything the player can end up with is an item: some start
+            // owned, some are offered on level-up — see RunManager's
+            // availableItemPool below.
+            var basicShotItem = CreateProjectileItem(projectilePrefab, basicShotIcon, "basic_shot", "Basic Shot", "가장 가까운 적에게 투사체를 자동으로 발사한다.");
+            var moveSpeedItem = CreateStatBonusItem(moveSpeedIcon, "move_speed_up", "Swift Boots", StatType.MoveSpeedMultiplier, 0.15f, "이동 속도가 증가한다.");
+            var magnetItem = CreateStatBonusItem(magnetIcon, "magnet_up", "Loot Magnet", StatType.PickupRange, 1.5f, "아이템 획득 범위가 증가한다.");
             var throwingKnifeItem = CreateProjectileItem(projectilePrefab, throwingKnifeIcon, "throwing_knife", "Throwing Knife", "가장 가까운 적에게 칼을 자동으로 던진다.");
 
             var itemDatabase = CreateAsset<ItemDatabase>($"{DataFolder}/Items", "ItemDatabase");
             var itemDatabaseSO = new SerializedObject(itemDatabase);
             var databaseItemsProp = itemDatabaseSO.FindProperty("items");
-            databaseItemsProp.arraySize = 1;
-            databaseItemsProp.GetArrayElementAtIndex(0).objectReferenceValue = throwingKnifeItem;
+            var allItems = new ItemDefinition[] { basicShotItem, moveSpeedItem, magnetItem, throwingKnifeItem };
+            AssignArray(databaseItemsProp, allItems);
             itemDatabaseSO.ApplyModifiedProperties();
 
             // Asset rather than a scene component, so it's referenced the
@@ -127,18 +129,17 @@ namespace RogueLike.EditorTools
 
             playerGo.AddComponent<PlayerInputHandler>();
             playerGo.AddComponent<PlayerController>();
-            var skillLoadout = playerGo.AddComponent<PlayerSkillLoadout>();
             playerGo.AddComponent<LootMagnet>();
-
-            var activeRunner = playerGo.AddComponent<ActiveSkillRunner>();
-            new SerializedObject(activeRunner).ApplyEnemyLayer(enemyLayer);
 
             var lootMagnet = playerGo.GetComponent<LootMagnet>();
             new SerializedObject(lootMagnet).ApplyLootLayer(lootLayer);
 
             // --- Item-skill loadout (item = skill; see Items/*) ---
-            // ItemInventory is a ScriptableObject asset (created above,
-            // outside the scene) rather than a player component.
+            // Drives every equipped item's own behavior, and is also where
+            // PlayerController/LootMagnet read passive stat bonuses from —
+            // there's no separate skill system any more. ItemInventory is a
+            // ScriptableObject asset (created above, outside the scene)
+            // rather than a player component.
             var itemLoadout = playerGo.AddComponent<ItemSkillLoadout>();
             new SerializedObject(itemLoadout).ApplyEnemyLayer(enemyLayer);
 
@@ -173,14 +174,11 @@ namespace RogueLike.EditorTools
             runManagerSO.FindProperty("playerHealth").objectReferenceValue = playerHealth;
             runManagerSO.FindProperty("waveSpawner").objectReferenceValue = waveSpawner;
             runManagerSO.FindProperty("bounds").objectReferenceValue = chapterBounds;
-            runManagerSO.FindProperty("skillLoadout").objectReferenceValue = skillLoadout;
             runManagerSO.FindProperty("itemInventory").objectReferenceValue = itemInventory;
-            var skillPoolProp = runManagerSO.FindProperty("availableSkillPool");
-            skillPoolProp.arraySize = 3;
-            skillPoolProp.GetArrayElementAtIndex(0).objectReferenceValue = activeSkill;
-            skillPoolProp.GetArrayElementAtIndex(1).objectReferenceValue = moveSpeedSkill;
-            skillPoolProp.GetArrayElementAtIndex(2).objectReferenceValue = magnetSkill;
-            runManagerSO.FindProperty("skillChoiceCount").intValue = 3;
+            runManagerSO.FindProperty("itemLoadout").objectReferenceValue = itemLoadout;
+            var itemPoolProp = runManagerSO.FindProperty("availableItemPool");
+            AssignArray(itemPoolProp, new ItemDefinition[] { basicShotItem, moveSpeedItem, magnetItem });
+            runManagerSO.FindProperty("itemChoiceCount").intValue = 3;
             runManagerSO.ApplyModifiedProperties();
 
             // --- Camera ---
@@ -259,9 +257,6 @@ namespace RogueLike.EditorTools
             var healthDotSprite = CreateAndSavePixelSprite(ArtFolder, "RoguelikeHealthDotSprite", HealthDotPixels, HealthDotPixel);
             var healthDots = CreateHealthDots(canvasGo.transform, healthDotSprite, new Vector2(40f, -280f), MaxHealthDots);
 
-            // --- Skill slots: bottom-center, arranged by a HorizontalLayoutGroup ---
-            var (skillIcons, skillLevels) = CreateSkillIconRow(canvasGo.transform, "Skill", new Vector2(0f, 150f), MaxSkillIconSlots);
-
             // --- Item-skill slots + inventory panel (item = skill) ---
             var (itemPanel, itemListParent) = CreateItemInventoryPanel(canvasGo.transform);
             itemPanel.SetActive(false);
@@ -279,7 +274,7 @@ namespace RogueLike.EditorTools
 
             itemPanel.transform.Find("CloseButton").GetComponent<Button>().onClick.AddListener(itemInventoryUI.Close);
 
-            CreateItemSkillSlotRow(canvasGo.transform, new Vector2(0f, 300f), ItemSlotVisualCount, itemLoadout, itemInventoryUI);
+            CreateItemSkillSlotRow(canvasGo.transform, new Vector2(0f, 150f), ItemSlotVisualCount, itemLoadout, itemInventoryUI);
 
             var levelUpPanel = CreatePanel(canvasGo.transform, "LevelUpPanel", "LEVEL UP!");
             levelUpPanel.SetActive(false);
@@ -326,13 +321,6 @@ namespace RogueLike.EditorTools
                 choiceLabelsProp.GetArrayElementAtIndex(i).objectReferenceValue = choiceLabels[i];
             }
             levelUpUISO.ApplyModifiedProperties();
-
-            var skillLoadoutUI = canvasGo.AddComponent<SkillLoadoutUI>();
-            var skillLoadoutUISO = new SerializedObject(skillLoadoutUI);
-            skillLoadoutUISO.FindProperty("loadout").objectReferenceValue = skillLoadout;
-            AssignArray(skillLoadoutUISO.FindProperty("skillIcons"), skillIcons);
-            AssignArray(skillLoadoutUISO.FindProperty("skillLevels"), skillLevels);
-            skillLoadoutUISO.ApplyModifiedProperties();
 
             if (!AssetDatabase.IsValidFolder("Assets/Scenes"))
             {
@@ -418,57 +406,18 @@ namespace RogueLike.EditorTools
             return prefab;
         }
 
-        private static ActiveSkillDefinition CreateBasicShotSkill(GameObject projectilePrefab, Sprite icon, string description)
+        private static StatBonusItemDefinition CreateStatBonusItem(Sprite icon, string itemKey, string displayName, StatType statType, float bonusValue, string description)
         {
-            var skill = CreateAsset<ActiveSkillDefinition>($"{DataFolder}/Skills", "BasicShot");
-            var so = new SerializedObject(skill);
-            so.FindProperty("skillId").stringValue = "basic_shot";
-            so.FindProperty("displayName").stringValue = "Basic Shot";
-            so.FindProperty("icon").objectReferenceValue = icon;
-            so.FindProperty("description").stringValue = description;
-            so.FindProperty("maxLevel").intValue = 5;
-            so.FindProperty("projectilePrefab").objectReferenceValue = projectilePrefab;
-            so.FindProperty("range").floatValue = 8f;
-
-            int[] damages = { 3, 4, 5, 6, 8 };
-            float[] cooldowns = { 0.8f, 0.75f, 0.7f, 0.6f, 0.5f };
-            int[] counts = { 1, 1, 1, 2, 2 };
-            int[] pierces = { 0, 0, 1, 1, 2 };
-
-            var levelStatsProp = so.FindProperty("levelStats");
-            levelStatsProp.arraySize = 5;
-            for (int i = 0; i < 5; i++)
-            {
-                var element = levelStatsProp.GetArrayElementAtIndex(i);
-                element.FindPropertyRelative("damage").intValue = damages[i];
-                element.FindPropertyRelative("cooldown").floatValue = cooldowns[i];
-                element.FindPropertyRelative("projectileCount").intValue = counts[i];
-                element.FindPropertyRelative("pierceCount").intValue = pierces[i];
-                element.FindPropertyRelative("projectileSpeed").floatValue = 10f;
-            }
-
-            so.ApplyModifiedProperties();
-            return skill;
-        }
-
-        private static PassiveSkillDefinition CreatePassiveSkill(string assetName, string displayName, StatType statType, float valuePerLevel, Sprite icon, string description)
-        {
-            var skill = CreateAsset<PassiveSkillDefinition>($"{DataFolder}/Skills", assetName);
-            var so = new SerializedObject(skill);
-            so.FindProperty("skillId").stringValue = assetName;
+            var item = CreateAsset<StatBonusItemDefinition>($"{DataFolder}/Items", displayName.Replace(" ", string.Empty));
+            var so = new SerializedObject(item);
+            so.FindProperty("itemKey").stringValue = itemKey;
             so.FindProperty("displayName").stringValue = displayName;
             so.FindProperty("icon").objectReferenceValue = icon;
             so.FindProperty("description").stringValue = description;
-            so.FindProperty("maxLevel").intValue = 5;
-
-            var bonusesProp = so.FindProperty("statBonuses");
-            bonusesProp.arraySize = 1;
-            var bonus = bonusesProp.GetArrayElementAtIndex(0);
-            bonus.FindPropertyRelative("statType").enumValueIndex = (int)statType;
-            bonus.FindPropertyRelative("valuePerLevel").floatValue = valuePerLevel;
-
+            so.FindProperty("statType").enumValueIndex = (int)statType;
+            so.FindProperty("bonusValue").floatValue = bonusValue;
             so.ApplyModifiedProperties();
-            return skill;
+            return item;
         }
 
         private static ProjectileItemDefinition CreateProjectileItem(GameObject projectilePrefab, Sprite icon, string itemKey, string displayName, string description)
@@ -607,72 +556,6 @@ namespace RogueLike.EditorTools
             {
                 arrayProp.GetArrayElementAtIndex(i).objectReferenceValue = values[i];
             }
-        }
-
-        // --- Skill loadout icons ----------------------------------------------
-        private const int MaxSkillIconSlots = 6;
-        private const float SkillIconSize = 130f;
-        private const float SkillIconSpacing = 146f;
-
-        // Each slot is a dark background square with an Icon image (starts
-        // hidden; SkillLoadoutUI enables/assigns it once a skill occupies
-        // that slot) and a small level number in the bottom-right corner.
-        // The row itself is bottom-center anchored and arranged by a
-        // HorizontalLayoutGroup rather than manually-positioned slots.
-        private static (Image[] icons, Text[] levels) CreateSkillIconRow(Transform parent, string namePrefix, Vector2 anchoredPosition, int count)
-        {
-            var containerGo = new GameObject($"{namePrefix}Row", typeof(RectTransform));
-            containerGo.transform.SetParent(parent, false);
-            var containerRt = containerGo.GetComponent<RectTransform>();
-            containerRt.anchorMin = new Vector2(0.5f, 0f);
-            containerRt.anchorMax = new Vector2(0.5f, 0f);
-            containerRt.pivot = new Vector2(0.5f, 0f);
-            containerRt.anchoredPosition = anchoredPosition;
-            containerRt.sizeDelta = new Vector2(count * SkillIconSpacing, SkillIconSize);
-
-            var layoutGroup = containerGo.AddComponent<HorizontalLayoutGroup>();
-            layoutGroup.spacing = SkillIconSpacing - SkillIconSize;
-            layoutGroup.childAlignment = TextAnchor.MiddleCenter;
-            layoutGroup.childControlWidth = false;
-            layoutGroup.childControlHeight = false;
-            layoutGroup.childForceExpandWidth = false;
-            layoutGroup.childForceExpandHeight = false;
-
-            var icons = new Image[count];
-            var levels = new Text[count];
-
-            for (int i = 0; i < count; i++)
-            {
-                var slotGo = new GameObject($"{namePrefix}Slot_{i}", typeof(RectTransform));
-                slotGo.transform.SetParent(containerGo.transform, false);
-                slotGo.GetComponent<RectTransform>().sizeDelta = new Vector2(SkillIconSize, SkillIconSize);
-
-                var bgImg = slotGo.AddComponent<Image>();
-                bgImg.color = new Color(0f, 0f, 0f, 0.4f);
-
-                var iconGo = new GameObject("Icon", typeof(RectTransform));
-                iconGo.transform.SetParent(slotGo.transform, false);
-                SetStretch(iconGo.GetComponent<RectTransform>());
-                var iconImg = iconGo.AddComponent<Image>();
-                iconGo.SetActive(false);
-
-                var levelGo = CreateUIText(slotGo.transform, "Level", "", Vector2.zero, new Vector2(SkillIconSize, 24f));
-                var levelRt = levelGo.GetComponent<RectTransform>();
-                levelRt.anchorMin = new Vector2(1f, 0f);
-                levelRt.anchorMax = new Vector2(1f, 0f);
-                levelRt.pivot = new Vector2(1f, 0f);
-                levelRt.anchoredPosition = Vector2.zero;
-                levelRt.sizeDelta = new Vector2(48f, 34f);
-                var levelText = levelGo.GetComponent<Text>();
-                levelText.fontSize = 28;
-                levelText.fontStyle = FontStyle.Bold;
-                levelText.alignment = TextAnchor.LowerRight;
-
-                icons[i] = iconImg;
-                levels[i] = levelText;
-            }
-
-            return (icons, levels);
         }
 
         // --- Item-skill slots + inventory panel ---------------------------------

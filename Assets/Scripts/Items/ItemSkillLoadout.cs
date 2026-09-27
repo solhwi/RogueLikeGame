@@ -28,7 +28,7 @@ namespace RogueLike.Items
         {
             equippedItems = new ItemInstance[slotCount];
             behaviors = new ItemSkillBehavior[slotCount];
-            user = new ItemUser(GetComponent<PlayerController>(), enemyLayer, GetComponent<PlayerSkillLoadout>());
+            user = new ItemUser(GetComponent<PlayerController>(), enemyLayer, this);
         }
 
         private void Update()
@@ -42,6 +42,38 @@ namespace RogueLike.Items
         public ItemInstance GetEquipped(int slotIndex)
         {
             return IsValidSlot(slotIndex) ? equippedItems[slotIndex] : null;
+        }
+
+        // First empty slot, or -1 if every slot is occupied — used to
+        // auto-equip a newly picked item without displacing another one.
+        public int FindFreeSlot()
+        {
+            for (int i = 0; i < slotCount; i++)
+            {
+                if (equippedItems[i] == null)
+                {
+                    return i;
+                }
+            }
+
+            return -1;
+        }
+
+        // Every equipped item's contribution to this stat, summed. Purely
+        // passive items (see ItemSkillBehavior) only ever show up here.
+        public float GetPassiveBonus(StatType type)
+        {
+            float total = 0f;
+
+            foreach (var behavior in behaviors)
+            {
+                if (behavior != null)
+                {
+                    total += behavior.GetStatBonus(type);
+                }
+            }
+
+            return total;
         }
 
         public bool TryEquip(int slotIndex, ItemInstance item)

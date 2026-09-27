@@ -2,12 +2,12 @@ using UnityEngine;
 
 namespace RogueLike.Items
 {
-    // Base data for one item type. An item IS a skill: equipping it into a
-    // skill slot is what makes it act, via the behavior it creates below.
-    // Adding a new item type never touches ItemInventory, ItemSkillLoadout,
-    // or the UI — it's a new ItemDefinition subclass (data) paired with a new
-    // ItemSkillBehavior subclass (logic), following the same open/closed
-    // shape as SkillDefinition/ActiveSkillDefinition elsewhere in Combat.
+    // Base data for one item type. An item IS a skill — this is the only
+    // skill concept in the game, active and passive alike: equipping it
+    // into a skill slot is what makes it act, via the behavior it creates
+    // below. Adding a new item type never touches ItemInventory,
+    // ItemSkillLoadout, or the UI — it's a new ItemDefinition subclass
+    // (data) paired with a new ItemSkillBehavior subclass (logic).
     public abstract class ItemDefinition : ScriptableObject
     {
         [SerializeField] private string itemKey;

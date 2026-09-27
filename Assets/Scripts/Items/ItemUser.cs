@@ -5,22 +5,23 @@ using RogueLike.Player;
 namespace RogueLike.Items
 {
     // The character instance an equipped item's behavior acts through, plus
-    // the small amount of combat plumbing (targeting, passive stat lookups)
-    // every item needs. Built once by ItemSkillLoadout and handed to every
-    // ItemSkillBehavior.Tick call, so a new item type never has to know how
-    // to find the player, its enemy layer, or its stat bonuses on its own.
+    // the small amount of combat plumbing (targeting, passive stat lookups
+    // from every OTHER equipped item) every item needs. Built once by
+    // ItemSkillLoadout and handed to every ItemSkillBehavior call, so a new
+    // item type never has to know how to find the player, its enemy layer,
+    // or its stat bonuses on its own.
     public class ItemUser
     {
         public PlayerController Character { get; }
         public Transform Transform => Character.transform;
         public LayerMask EnemyLayer { get; }
-        public PlayerSkillLoadout StatSource { get; }
+        public ItemSkillLoadout Loadout { get; }
 
-        public ItemUser(PlayerController character, LayerMask enemyLayer, PlayerSkillLoadout statSource)
+        public ItemUser(PlayerController character, LayerMask enemyLayer, ItemSkillLoadout loadout)
         {
             Character = character;
             EnemyLayer = enemyLayer;
-            StatSource = statSource;
+            Loadout = loadout;
         }
 
         public Transform FindNearestEnemy(float range)
@@ -30,7 +31,7 @@ namespace RogueLike.Items
 
         public float GetPassiveBonus(StatType type)
         {
-            return StatSource != null ? StatSource.GetPassiveBonus(type) : 0f;
+            return Loadout != null ? Loadout.GetPassiveBonus(type) : 0f;
         }
     }
 }
