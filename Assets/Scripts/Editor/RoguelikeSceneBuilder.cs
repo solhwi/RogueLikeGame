@@ -9,6 +9,7 @@ using UnityEngine.UI;
 using RogueLike.Core;
 using RogueLike.Player;
 using RogueLike.Combat;
+using RogueLike.Items;
 using RogueLike.Level;
 using RogueLike.Enemies;
 using RogueLike.Managers;
@@ -77,6 +78,9 @@ namespace RogueLike.EditorTools
             var moveSpeedSkill = CreatePassiveSkill("MoveSpeedUp", "Swift Boots", StatType.MoveSpeedMultiplier, 0.05f, moveSpeedIcon, "이동 속도가 증가한다.");
             var magnetSkill = CreatePassiveSkill("MagnetUp", "Loot Magnet", StatType.PickupRange, 0.5f, magnetIcon, "아이템 획득 범위가 증가한다.");
 
+            var throwingKnifeIcon = CreateAndSaveSquareSprite("ItemIcon_ThrowingKnife", new Color(0.85f, 0.85f, 0.90f));
+            var throwingKnifeItem = CreateProjectileItem(projectilePrefab, throwingKnifeIcon, "throwing_knife", "Throwing Knife", "가장 가까운 적에게 칼을 자동으로 던진다.");
+
             var zombieDefinition = CreateZombieDefinition(enemyPrefab, gemPrefab);
             var waveData = CreateWaveData(zombieDefinition);
             CreateChapterDefinition(waveData);
@@ -112,6 +116,14 @@ namespace RogueLike.EditorTools
 
             var lootMagnet = playerGo.GetComponent<LootMagnet>();
             new SerializedObject(lootMagnet).ApplyLootLayer(lootLayer);
+
+            // --- Item-skill inventory/loadout (item = skill; see Items/*) ---
+            var itemInventory = playerGo.AddComponent<ItemInventory>();
+            var itemLoadout = playerGo.AddComponent<ItemSkillLoadout>();
+            new SerializedObject(itemLoadout).ApplyEnemyLayer(enemyLayer);
+
+            var throwingKnifeInstance = itemInventory.Add(throwingKnifeItem);
+            itemLoadout.TryEquip(0, throwingKnifeInstance);
 
             // --- Run manager (waves + bounds) ---
             var runManagerGo = new GameObject("RunManager");
@@ -420,6 +432,25 @@ namespace RogueLike.EditorTools
 
             so.ApplyModifiedProperties();
             return skill;
+        }
+
+        private static ProjectileItemDefinition CreateProjectileItem(GameObject projectilePrefab, Sprite icon, string itemKey, string displayName, string description)
+        {
+            var item = CreateAsset<ProjectileItemDefinition>($"{DataFolder}/Items", displayName.Replace(" ", string.Empty));
+            var so = new SerializedObject(item);
+            so.FindProperty("itemKey").stringValue = itemKey;
+            so.FindProperty("displayName").stringValue = displayName;
+            so.FindProperty("icon").objectReferenceValue = icon;
+            so.FindProperty("description").stringValue = description;
+            so.FindProperty("projectilePrefab").objectReferenceValue = projectilePrefab;
+            so.FindProperty("range").floatValue = 6f;
+            so.FindProperty("cooldown").floatValue = 1.2f;
+            so.FindProperty("damage").intValue = 3;
+            so.FindProperty("projectileCount").intValue = 1;
+            so.FindProperty("pierceCount").intValue = 0;
+            so.FindProperty("projectileSpeed").floatValue = 9f;
+            so.ApplyModifiedProperties();
+            return item;
         }
 
         private static EnemyDefinition CreateZombieDefinition(GameObject enemyPrefab, GameObject gemPrefab)
