@@ -1,0 +1,19 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e7999a18c41e6741b922b7090cdf4ac, type: 3}
+  m_Name: TestChapter
+  m_EditorClassIdentifier: Assembly-CSharp::Platformer.Level.ChapterDefinition
+  chapterId: test_chapter
+  mapType: 1
+  energyCost: 5
+  waveData: {fileID: 11400000, guid: 5438525da30c5c64cb8ee4b4fa13b87b, type: 2}
+  mapBoundsSize: {x: 20, y: 20}

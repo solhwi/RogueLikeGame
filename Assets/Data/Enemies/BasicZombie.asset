@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3d555dbd680340544bb7de3c4098cb38, type: 3}
+  m_Name: BasicZombie
+  m_EditorClassIdentifier: Assembly-CSharp::Platformer.Enemies.EnemyDefinition
+  enemyId: basic_zombie
+  prefab: {fileID: 3887529760596926404, guid: 645d77fff455f0946a353ff0d9e1b6d4, type: 3}
+  maxHealth: 5
+  moveSpeed: 1.5
+  contactDamage: 1
+  tier: 0
+  experienceGemPrefab: {fileID: 1300551391426488441, guid: ec6d1927891e11a46a9f0c86c2ffb748, type: 3}
+  experienceReward: 1
