@@ -12,6 +12,7 @@ namespace RogueLike.UI
     {
         [SerializeField] private Image icon;
         [SerializeField] private Text nameLabel;
+        [SerializeField] private Text descriptionLabel;
         [SerializeField] private GameObject equippedBadge;
 
         private Button button;
@@ -33,6 +34,10 @@ namespace RogueLike.UI
             if (nameLabel != null)
             {
                 nameLabel.text = item.Definition.DisplayName;
+            }
+            if (descriptionLabel != null)
+            {
+                descriptionLabel.text = item.Definition.Description;
             }
             if (equippedBadge != null)
             {

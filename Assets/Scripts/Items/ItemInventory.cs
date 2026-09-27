@@ -11,12 +11,33 @@ namespace RogueLike.Items
     // one is for item-skills only.
     public class ItemInventory : MonoBehaviour
     {
+        // Items owned from the start of the run (e.g. a starter weapon).
+        // Runtime pickups always go through Add() instead — this field only
+        // exists so a run has something to equip before its first drop.
+        [SerializeField] private ItemDefinition[] startingItems;
+
         public event Action<ItemInstance> OnItemAdded;
         public event Action<ItemInstance> OnItemRemoved;
 
         private readonly List<ItemInstance> items = new List<ItemInstance>();
 
         public IReadOnlyList<ItemInstance> Items => items;
+
+        private void Awake()
+        {
+            if (startingItems == null)
+            {
+                return;
+            }
+
+            foreach (var definition in startingItems)
+            {
+                if (definition != null)
+                {
+                    Add(definition);
+                }
+            }
+        }
 
         public ItemInstance Add(ItemDefinition definition)
         {

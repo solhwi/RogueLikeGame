@@ -122,8 +122,18 @@ namespace RogueLike.EditorTools
             var itemLoadout = playerGo.AddComponent<ItemSkillLoadout>();
             new SerializedObject(itemLoadout).ApplyEnemyLayer(enemyLayer);
 
-            var throwingKnifeInstance = itemInventory.Add(throwingKnifeItem);
-            itemLoadout.TryEquip(0, throwingKnifeInstance);
+            // Runtime lists on ItemInventory/ItemSkillLoadout aren't
+            // serialized fields, so Add()/TryEquip() called here (at
+            // edit time, while building the scene) wouldn't survive into
+            // the saved scene. Seed ownership through the serialized
+            // startingItems field instead — Awake() turns it into a real
+            // owned ItemInstance once the scene actually plays, and the
+            // player equips it themselves via the item-skill slot UI.
+            var itemInventorySO = new SerializedObject(itemInventory);
+            var startingItemsProp = itemInventorySO.FindProperty("startingItems");
+            startingItemsProp.arraySize = 1;
+            startingItemsProp.GetArrayElementAtIndex(0).objectReferenceValue = throwingKnifeItem;
+            itemInventorySO.ApplyModifiedProperties();
 
             // --- Run manager (waves + bounds) ---
             var runManagerGo = new GameObject("RunManager");
@@ -243,6 +253,25 @@ namespace RogueLike.EditorTools
 
             // --- Skill slots: bottom-center, arranged by a HorizontalLayoutGroup ---
             var (skillIcons, skillLevels) = CreateSkillIconRow(canvasGo.transform, "Skill", new Vector2(0f, 150f), MaxSkillIconSlots);
+
+            // --- Item-skill slots + inventory panel (item = skill) ---
+            var (itemPanel, itemListParent) = CreateItemInventoryPanel(canvasGo.transform);
+            itemPanel.SetActive(false);
+
+            var itemEntryPrefab = CreateItemEntryPrefab(throwingKnifeIcon).GetComponent<ItemInventoryEntryUI>();
+
+            var itemInventoryUI = canvasGo.AddComponent<ItemInventoryUI>();
+            var itemInventoryUISO = new SerializedObject(itemInventoryUI);
+            itemInventoryUISO.FindProperty("inventory").objectReferenceValue = itemInventory;
+            itemInventoryUISO.FindProperty("loadout").objectReferenceValue = itemLoadout;
+            itemInventoryUISO.FindProperty("panel").objectReferenceValue = itemPanel;
+            itemInventoryUISO.FindProperty("listParent").objectReferenceValue = itemListParent;
+            itemInventoryUISO.FindProperty("entryPrefab").objectReferenceValue = itemEntryPrefab;
+            itemInventoryUISO.ApplyModifiedProperties();
+
+            itemPanel.transform.Find("CloseButton").GetComponent<Button>().onClick.AddListener(itemInventoryUI.Close);
+
+            CreateItemSkillSlotRow(canvasGo.transform, new Vector2(0f, 300f), ItemSlotVisualCount, itemLoadout, itemInventoryUI);
 
             var levelUpPanel = CreatePanel(canvasGo.transform, "LevelUpPanel", "LEVEL UP!");
             levelUpPanel.SetActive(false);
@@ -636,6 +665,240 @@ namespace RogueLike.EditorTools
             }
 
             return (icons, levels);
+        }
+
+        // --- Item-skill slots + inventory panel ---------------------------------
+        private const int ItemSlotVisualCount = 6;
+        private const float ItemSlotIconSize = 130f;
+        private const float ItemSlotSpacing = 146f;
+        private const float ItemSlotHeight = ItemSlotIconSize + 36f;
+
+        // Row of compact item-skill slots (icon + name only — the full skill
+        // description is shown in the inventory panel entries below, where
+        // there's room for it). Each slot wires itself up: tapping it opens
+        // the shared ItemInventoryUI targeted at that slot index.
+        private static void CreateItemSkillSlotRow(Transform parent, Vector2 anchoredPosition, int count, ItemSkillLoadout loadout, ItemInventoryUI inventoryUI)
+        {
+            var containerGo = new GameObject("ItemSlotRow", typeof(RectTransform));
+            containerGo.transform.SetParent(parent, false);
+            var containerRt = containerGo.GetComponent<RectTransform>();
+            containerRt.anchorMin = new Vector2(0.5f, 0f);
+            containerRt.anchorMax = new Vector2(0.5f, 0f);
+            containerRt.pivot = new Vector2(0.5f, 0f);
+            containerRt.anchoredPosition = anchoredPosition;
+            containerRt.sizeDelta = new Vector2(count * ItemSlotSpacing, ItemSlotHeight);
+
+            var layoutGroup = containerGo.AddComponent<HorizontalLayoutGroup>();
+            layoutGroup.spacing = ItemSlotSpacing - ItemSlotIconSize;
+            layoutGroup.childAlignment = TextAnchor.MiddleCenter;
+            layoutGroup.childControlWidth = false;
+            layoutGroup.childControlHeight = false;
+            layoutGroup.childForceExpandWidth = false;
+            layoutGroup.childForceExpandHeight = false;
+
+            for (int i = 0; i < count; i++)
+            {
+                var slotGo = new GameObject($"ItemSlot_{i}", typeof(RectTransform));
+                slotGo.transform.SetParent(containerGo.transform, false);
+                slotGo.GetComponent<RectTransform>().sizeDelta = new Vector2(ItemSlotIconSize, ItemSlotHeight);
+
+                var bgImg = slotGo.AddComponent<Image>();
+                bgImg.color = new Color(0.2f, 0.14f, 0.05f, 0.5f);
+                var button = slotGo.AddComponent<Button>();
+                button.targetGraphic = bgImg;
+
+                var iconGo = new GameObject("Icon", typeof(RectTransform));
+                iconGo.transform.SetParent(slotGo.transform, false);
+                var iconRt = iconGo.GetComponent<RectTransform>();
+                iconRt.anchorMin = new Vector2(0f, 1f);
+                iconRt.anchorMax = new Vector2(1f, 1f);
+                iconRt.pivot = new Vector2(0.5f, 1f);
+                iconRt.anchoredPosition = Vector2.zero;
+                iconRt.sizeDelta = new Vector2(0f, ItemSlotIconSize);
+                var iconImg = iconGo.AddComponent<Image>();
+                iconGo.SetActive(false);
+
+                var emptyGo = CreateUIText(slotGo.transform, "Empty", "+", Vector2.zero, new Vector2(ItemSlotIconSize, ItemSlotIconSize));
+                var emptyRt = emptyGo.GetComponent<RectTransform>();
+                emptyRt.anchorMin = new Vector2(0f, 1f);
+                emptyRt.anchorMax = new Vector2(1f, 1f);
+                emptyRt.pivot = new Vector2(0.5f, 1f);
+                emptyRt.anchoredPosition = Vector2.zero;
+                emptyRt.sizeDelta = new Vector2(0f, ItemSlotIconSize);
+                var emptyText = emptyGo.GetComponent<Text>();
+                emptyText.alignment = TextAnchor.MiddleCenter;
+                emptyText.fontSize = 40;
+                emptyText.color = new Color(1f, 1f, 1f, 0.4f);
+
+                var nameGo = CreateUIText(slotGo.transform, "Name", "", Vector2.zero, new Vector2(ItemSlotIconSize, 32f));
+                var nameRt = nameGo.GetComponent<RectTransform>();
+                nameRt.anchorMin = new Vector2(0.5f, 0f);
+                nameRt.anchorMax = new Vector2(0.5f, 0f);
+                nameRt.pivot = new Vector2(0.5f, 0f);
+                nameRt.anchoredPosition = Vector2.zero;
+                var nameText = nameGo.GetComponent<Text>();
+                nameText.fontSize = 20;
+                nameText.alignment = TextAnchor.UpperCenter;
+
+                var slotUI = slotGo.AddComponent<ItemSkillSlotUI>();
+                var so = new SerializedObject(slotUI);
+                so.FindProperty("loadout").objectReferenceValue = loadout;
+                so.FindProperty("inventoryUI").objectReferenceValue = inventoryUI;
+                so.FindProperty("slotIndex").intValue = i;
+                so.FindProperty("icon").objectReferenceValue = iconImg;
+                so.FindProperty("nameLabel").objectReferenceValue = nameText;
+                so.FindProperty("emptyState").objectReferenceValue = emptyGo;
+                so.ApplyModifiedProperties();
+            }
+        }
+
+        // Full-screen dim panel with a title, a close button and a scrollable
+        // vertical list (viewport + content, driven by a VerticalLayoutGroup +
+        // ContentSizeFitter) that ItemInventoryUI populates with entry
+        // instances at runtime. Returns the panel and the list's content
+        // transform (what entries get parented under).
+        private static (GameObject panel, Transform listParent) CreateItemInventoryPanel(Transform canvasParent)
+        {
+            var panelGo = new GameObject("ItemInventoryPanel", typeof(RectTransform));
+            panelGo.transform.SetParent(canvasParent, false);
+            SetStretch(panelGo.GetComponent<RectTransform>());
+            panelGo.AddComponent<Image>().color = new Color(0f, 0f, 0f, 0.8f);
+
+            var titleGo = CreateUIText(panelGo.transform, "Title", "인벤토리", Vector2.zero, new Vector2(500f, 70f));
+            var titleRt = titleGo.GetComponent<RectTransform>();
+            titleRt.anchorMin = new Vector2(0.5f, 1f);
+            titleRt.anchorMax = new Vector2(0.5f, 1f);
+            titleRt.pivot = new Vector2(0.5f, 1f);
+            titleRt.anchoredPosition = new Vector2(0f, -60f);
+            var titleText = titleGo.GetComponent<Text>();
+            titleText.fontSize = 44;
+            titleText.fontStyle = FontStyle.Bold;
+            titleText.alignment = TextAnchor.MiddleCenter;
+
+            var (closeButton, closeLabel) = CreateButton(panelGo.transform, "CloseButton", Vector2.zero, new Vector2(100f, 100f));
+            var closeRt = closeButton.GetComponent<RectTransform>();
+            closeRt.anchorMin = new Vector2(1f, 1f);
+            closeRt.anchorMax = new Vector2(1f, 1f);
+            closeRt.pivot = new Vector2(1f, 1f);
+            closeRt.anchoredPosition = new Vector2(-24f, -24f);
+            closeLabel.text = "X";
+            closeLabel.fontSize = 40;
+
+            var scrollGo = new GameObject("ScrollView", typeof(RectTransform));
+            scrollGo.transform.SetParent(panelGo.transform, false);
+            var scrollRt = scrollGo.GetComponent<RectTransform>();
+            scrollRt.anchorMin = new Vector2(0.5f, 0f);
+            scrollRt.anchorMax = new Vector2(0.5f, 1f);
+            scrollRt.pivot = new Vector2(0.5f, 0.5f);
+            scrollRt.anchoredPosition = new Vector2(0f, -60f);
+            scrollRt.sizeDelta = new Vector2(980f, -320f);
+
+            var viewportGo = new GameObject("Viewport", typeof(RectTransform));
+            viewportGo.transform.SetParent(scrollGo.transform, false);
+            SetStretch(viewportGo.GetComponent<RectTransform>());
+            viewportGo.AddComponent<Image>().color = new Color(0f, 0f, 0f, 0.01f);
+            viewportGo.AddComponent<RectMask2D>();
+
+            var contentGo = new GameObject("Content", typeof(RectTransform));
+            contentGo.transform.SetParent(viewportGo.transform, false);
+            var contentRt = contentGo.GetComponent<RectTransform>();
+            contentRt.anchorMin = new Vector2(0f, 1f);
+            contentRt.anchorMax = new Vector2(1f, 1f);
+            contentRt.pivot = new Vector2(0.5f, 1f);
+            contentRt.anchoredPosition = Vector2.zero;
+            contentRt.sizeDelta = Vector2.zero;
+
+            var vlg = contentGo.AddComponent<VerticalLayoutGroup>();
+            vlg.spacing = 16f;
+            vlg.childAlignment = TextAnchor.UpperCenter;
+            vlg.childControlWidth = true;
+            vlg.childControlHeight = false;
+            vlg.childForceExpandWidth = true;
+            vlg.childForceExpandHeight = false;
+
+            contentGo.AddComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+            var scrollRect = scrollGo.AddComponent<ScrollRect>();
+            scrollRect.horizontal = false;
+            scrollRect.vertical = true;
+            scrollRect.viewport = viewportGo.GetComponent<RectTransform>();
+            scrollRect.content = contentRt;
+            scrollRect.movementType = ScrollRect.MovementType.Clamped;
+
+            return (panelGo, contentGo.transform);
+        }
+
+        // One inventory row: icon, name, skill description and an "equipped"
+        // badge that ItemInventoryEntryUI.Bind toggles per item. Saved as a
+        // prefab so ItemInventoryUI can Instantiate one per owned item.
+        private static GameObject CreateItemEntryPrefab(Sprite placeholderIcon)
+        {
+            var go = new GameObject("ItemInventoryEntry", typeof(RectTransform));
+            go.GetComponent<RectTransform>().sizeDelta = new Vector2(920f, 140f);
+
+            var bgImg = go.AddComponent<Image>();
+            bgImg.color = new Color(1f, 1f, 1f, 0.08f);
+            var button = go.AddComponent<Button>();
+            button.targetGraphic = bgImg;
+            go.AddComponent<LayoutElement>().preferredHeight = 140f;
+
+            var iconGo = new GameObject("Icon", typeof(RectTransform));
+            iconGo.transform.SetParent(go.transform, false);
+            var iconRt = iconGo.GetComponent<RectTransform>();
+            iconRt.anchorMin = new Vector2(0f, 0.5f);
+            iconRt.anchorMax = new Vector2(0f, 0.5f);
+            iconRt.pivot = new Vector2(0f, 0.5f);
+            iconRt.anchoredPosition = new Vector2(20f, 0f);
+            iconRt.sizeDelta = new Vector2(100f, 100f);
+            var iconImg = iconGo.AddComponent<Image>();
+            iconImg.sprite = placeholderIcon;
+
+            var nameGo = CreateUIText(go.transform, "Name", "", Vector2.zero, new Vector2(680f, 44f));
+            var nameRt = nameGo.GetComponent<RectTransform>();
+            nameRt.anchorMin = new Vector2(0f, 1f);
+            nameRt.anchorMax = new Vector2(0f, 1f);
+            nameRt.pivot = new Vector2(0f, 1f);
+            nameRt.anchoredPosition = new Vector2(140f, -16f);
+            var nameText = nameGo.GetComponent<Text>();
+            nameText.fontSize = 32;
+            nameText.fontStyle = FontStyle.Bold;
+
+            var descGo = CreateUIText(go.transform, "Description", "", Vector2.zero, new Vector2(680f, 70f));
+            var descRt = descGo.GetComponent<RectTransform>();
+            descRt.anchorMin = new Vector2(0f, 1f);
+            descRt.anchorMax = new Vector2(0f, 1f);
+            descRt.pivot = new Vector2(0f, 1f);
+            descRt.anchoredPosition = new Vector2(140f, -62f);
+            var descText = descGo.GetComponent<Text>();
+            descText.fontSize = 22;
+            descText.color = new Color(1f, 1f, 1f, 0.75f);
+
+            var badgeGo = new GameObject("EquippedBadge", typeof(RectTransform));
+            badgeGo.transform.SetParent(go.transform, false);
+            var badgeRt = badgeGo.GetComponent<RectTransform>();
+            badgeRt.anchorMin = new Vector2(1f, 0.5f);
+            badgeRt.anchorMax = new Vector2(1f, 0.5f);
+            badgeRt.pivot = new Vector2(1f, 0.5f);
+            badgeRt.anchoredPosition = new Vector2(-20f, 0f);
+            badgeRt.sizeDelta = new Vector2(140f, 50f);
+            badgeGo.AddComponent<Image>().color = new Color(0.3f, 0.85f, 0.4f, 0.9f);
+
+            var badgeLabelGo = CreateUIText(badgeGo.transform, "Label", "장착중", Vector2.zero, new Vector2(140f, 50f));
+            SetStretch(badgeLabelGo.GetComponent<RectTransform>());
+            var badgeLabelText = badgeLabelGo.GetComponent<Text>();
+            badgeLabelText.alignment = TextAnchor.MiddleCenter;
+            badgeLabelText.fontSize = 22;
+            badgeLabelText.color = Color.black;
+
+            var entryUI = go.AddComponent<ItemInventoryEntryUI>();
+            var entrySO = new SerializedObject(entryUI);
+            entrySO.FindProperty("icon").objectReferenceValue = iconImg;
+            entrySO.FindProperty("nameLabel").objectReferenceValue = nameText;
+            entrySO.FindProperty("descriptionLabel").objectReferenceValue = descText;
+            entrySO.FindProperty("equippedBadge").objectReferenceValue = badgeGo;
+            entrySO.ApplyModifiedProperties();
+
+            return SaveAsPrefabAndDestroy(go, $"{PrefabFolder}/ItemInventoryEntry.prefab");
         }
 
         // --- Top bar: pause button / icon counter ------------------------------
