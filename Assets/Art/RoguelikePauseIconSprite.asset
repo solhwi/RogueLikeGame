@@ -1,12 +1,58 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!213 &-3167130971233739541
+--- !u!28 &2800000
+Texture2D:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: RoguelikePauseIconSprite
+  m_ImageContentsHash:
+    serializedVersion: 2
+    Hash: 00000000000000000000000000000000
+  m_IsAlphaChannelOptional: 0
+  serializedVersion: 4
+  m_Width: 16
+  m_Height: 16
+  m_CompleteImageSize: 1024
+  m_MipsStripped: 0
+  m_TextureFormat: 4
+  m_MipCount: 1
+  m_IsReadable: 1
+  m_IsPreProcessed: 0
+  m_IgnoreMipmapLimit: 1
+  m_MipmapLimitGroupName: 
+  m_StreamingMipmaps: 0
+  m_StreamingMipmapsPriority: 0
+  m_VTOnly: 0
+  m_AlphaIsTransparency: 0
+  m_ImageCount: 1
+  m_TextureDimension: 2
+  m_TextureSettings:
+    serializedVersion: 2
+    m_FilterMode: 0
+    m_Aniso: 1
+    m_MipBias: 0
+    m_WrapU: 1
+    m_WrapV: 1
+    m_WrapW: 1
+  m_LightmapFormat: 0
+  m_ColorSpace: 1
+  m_PlatformBlob: 
+  image data: 1024
+  _typelessdata: ffffff00ffffff00ffffff00ffffffffffffffffffffffffffffffffffffff00ffffff00ffffffffffffffffffffffffffffffffffffff00ffffff00ffffff00ffffff00ffffff00ffffff00ffffffffffffffffffffffffffffffffffffff00ffffff00ffffffffffffffffffffffffffffffffffffff00ffffff00ffffff00ffffff00ffffff00ffffff00ffffffffffffffffffffffffffffffffffffff00ffffff00ffffffffffffffffffffffffffffffffffffff00ffffff00ffffff00ffffff00ffffff00ffffff00ffffffffffffffffffffffffffffffffffffff00ffffff00ffffffffffffffffffffffffffffffffffffff00ffffff00ffffff00ffffff00ffffff00ffffff00ffffffffffffffffffffffffffffffffffffff00ffffff00ffffffffffffffffffffffffffffffffffffff00ffffff00ffffff00ffffff00ffffff00ffffff00ffffffffffffffffffffffffffffffffffffff00ffffff00ffffffffffffffffffffffffffffffffffffff00ffffff00ffffff00ffffff00ffffff00ffffff00ffffffffffffffffffffffffffffffffffffff00ffffff00ffffffffffffffffffffffffffffffffffffff00ffffff00ffffff00ffffff00ffffff00ffffff00ffffffffffffffffffffffffffffffffffffff00ffffff00ffffffffffffffffffffffffffffffffffffff00ffffff00ffffff00ffffff00ffffff00ffffff00ffffffffffffffffffffffffffffffffffffff00ffffff00ffffffffffffffffffffffffffffffffffffff00ffffff00ffffff00ffffff00ffffff00ffffff00ffffffffffffffffffffffffffffffffffffff00ffffff00ffffffffffffffffffffffffffffffffffffff00ffffff00ffffff00ffffff00ffffff00ffffff00ffffffffffffffffffffffffffffffffffffff00ffffff00ffffffffffffffffffffffffffffffffffffff00ffffff00ffffff00ffffff00ffffff00ffffff00ffffffffffffffffffffffffffffffffffffff00ffffff00ffffffffffffffffffffffffffffffffffffff00ffffff00ffffff00ffffff00ffffff00ffffff00ffffffffffffffffffffffffffffffffffffff00ffffff00ffffffffffffffffffffffffffffffffffffff00ffffff00ffffff00ffffff00ffffff00ffffff00ffffffffffffffffffffffffffffffffffffff00ffffff00ffffffffffffffffffffffffffffffffffffff00ffffff00ffffff00ffffff00ffffff00ffffff00ffffffffffffffffffffffffffffffffffffff00ffffff00ffffffffffffffffffffffffffffffffffffff00ffffff00ffffff00ffffff00ffffff00ffffff00ffffffffffffffffffffffffffffffffffffff00ffffff00ffffffffffffffffffffffffffffffffffffff00ffffff00ffffff00
+  m_StreamData:
+    serializedVersion: 2
+    offset: 0
+    size: 0
+    path: 
+--- !u!213 &5562968273992973609
 Sprite:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: GroundStoneSprite
+  m_Name: RoguelikePauseIconSprite
   m_Rect:
     serializedVersion: 2
     x: 0
@@ -210,49 +256,3 @@ Sprite:
   m_Bones: []
   m_ScriptableObjects: []
   m_SpriteID: 
---- !u!28 &2800000
-Texture2D:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: GroundStoneSprite
-  m_ImageContentsHash:
-    serializedVersion: 2
-    Hash: 00000000000000000000000000000000
-  m_IsAlphaChannelOptional: 0
-  serializedVersion: 4
-  m_Width: 16
-  m_Height: 16
-  m_CompleteImageSize: 1024
-  m_MipsStripped: 0
-  m_TextureFormat: 4
-  m_MipCount: 1
-  m_IsReadable: 1
-  m_IsPreProcessed: 0
-  m_IgnoreMipmapLimit: 1
-  m_MipmapLimitGroupName: 
-  m_StreamingMipmaps: 0
-  m_StreamingMipmapsPriority: 0
-  m_VTOnly: 0
-  m_AlphaIsTransparency: 0
-  m_ImageCount: 1
-  m_TextureDimension: 2
-  m_TextureSettings:
-    serializedVersion: 2
-    m_FilterMode: 0
-    m_Aniso: 1
-    m_MipBias: 0
-    m_WrapU: 1
-    m_WrapV: 1
-    m_WrapW: 1
-  m_LightmapFormat: 0
-  m_ColorSpace: 1
-  m_PlatformBlob: 
-  image data: 1024
-  _typelessdata: 36343bff36343bff36343bff36343bff36343bff36343bff36343bff36343bff36343bff36343bff36343bff36343bff36343bff36343bff36343bff36343bff36343bff4f4c56ff504d58ff4f4c57ff494750ff504e58ff4d4a55ff4b4852ff48464fff4b4953ff4d4b55ff4c4a54ff4c4a54ff4b4953ff4c4a54ff54515dff36343bff4d4b55ff4d4a55ff4d4b55ff4f4c57ff4c4a54ff4c4954ff494750ff514e59ff4d4b55ff4d4b55ff4e4b56ff494650ff514e59ff4b4953ff54515dff36343bff4c4a54ff4b4953ff4b4953ff494650ff4b4852ff4c4a54ff4a4851ff4a4751ff4f4c57ff514e59ff494650ff4e4c56ff4a4751ff504d58ff54515dff36343bff4d4a54ff4a4751ff494751ff4f4d57ff4b4852ff4a4852ff4a4852ff4e4b56ff494751ff514e59ff504d58ff4e4c56ff4a4851ff4b4852ff54515dff36343bff4f4c56ff494750ff48464fff4b4852ff4c4a54ff514e59ff4e4b56ff4f4d57ff4d4a55ff504e58ff4a4852ff4e4b55ff4d4b55ff4a4751ff54515dff36343bff4d4b55ff4f4c56ff504e58ff504e58ff4d4a55ff4e4b56ff4e4b55ff4d4b55ff4f4c56ff4b4953ff4f4c56ff4a4751ff514e59ff504e58ff54515dff36343bff494650ff494751ff4a4751ff4e4c56ff4a4751ff4c4953ff4a4751ff514e59ff4b4953ff4e4c56ff4b4852ff4d4b55ff514e59ff4d4b55ff54515dff36343bff514e59ff4c4a54ff504e59ff4a4851ff4c4953ff504d58ff4d4a54ff4f4c56ff494751ff504d58ff494650ff494650ff4d4b55ff4f4c56ff54515dff36343bff4d4b55ff48464fff4e4b56ff4c4a54ff4c4953ff4c4953ff4b4953ff4b4953ff4f4d57ff48464fff4c4953ff504e58ff4d4b55ff494751ff54515dff36343bff4a4852ff4d4b55ff48464fff4f4d57ff514e59ff4f4d57ff48464fff4b4852ff514e59ff514e59ff504e58ff514e59ff4c4a54ff504d58ff54515dff36343bff4f4c57ff4b4953ff4a4852ff48464fff4e4c56ff4f4c57ff4a4852ff4e4c56ff48464fff514e59ff4a4851ff4e4b56ff4a4751ff4a4751ff54515dff36343bff4d4b55ff484650ff4f4c57ff4d4a54ff4a4751ff4c4953ff4d4a55ff504d58ff4e4c56ff48464fff514e59ff504d58ff484650ff4b4852ff54515dff36343bff484650ff504d58ff504e58ff4c4953ff514e59ff4e4c56ff4f4c56ff4d4b55ff4c4953ff4e4b56ff504e58ff4a4852ff494751ff504d58ff54515dff36343bff4e4c56ff4d4a54ff504e59ff4e4b56ff494650ff4e4b56ff4c4953ff504d58ff4f4d57ff4a4751ff484650ff4d4a55ff4f4d57ff4b4953ff54515dff36343bff54515dff54515dff54515dff54515dff54515dff54515dff54515dff54515dff54515dff54515dff54515dff54515dff54515dff54515dff54515dff
-  m_StreamData:
-    serializedVersion: 2
-    offset: 0
-    size: 0
-    path: 

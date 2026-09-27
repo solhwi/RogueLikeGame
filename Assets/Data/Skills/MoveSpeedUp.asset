@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Platformer.Combat.PassiveSkillDefinition
   skillId: MoveSpeedUp
   displayName: Swift Boots
-  icon: {fileID: 1186819762248415314, guid: aa55e53f50faaea46b4a58224b2fb598, type: 2}
+  icon: {fileID: -5539621641094566019, guid: aa55e53f50faaea46b4a58224b2fb598, type: 2}
   description: "\uC774\uB3D9 \uC18D\uB3C4\uAC00 \uC99D\uAC00\uD55C\uB2E4."
   maxLevel: 5
   statBonuses:

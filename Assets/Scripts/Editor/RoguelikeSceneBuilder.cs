@@ -191,7 +191,7 @@ namespace RogueLike.EditorTools
             scaler.matchWidthOrHeight = 1f;
             canvasGo.AddComponent<GraphicRaycaster>();
 
-            // --- Top bar: pause (left) / timer (center) / kill count (right) ---
+            // --- Top bar: pause (left) / timer (center) / currency + kill count (right) ---
             var topBarGo = new GameObject("TopBar", typeof(RectTransform));
             topBarGo.transform.SetParent(canvasGo.transform, false);
             var topBarRt = topBarGo.GetComponent<RectTransform>();
@@ -199,7 +199,7 @@ namespace RogueLike.EditorTools
             topBarRt.anchorMax = new Vector2(1f, 1f);
             topBarRt.pivot = new Vector2(0.5f, 1f);
             topBarRt.anchoredPosition = Vector2.zero;
-            topBarRt.sizeDelta = new Vector2(0f, 160f);
+            topBarRt.sizeDelta = new Vector2(0f, 190f);
             topBarGo.AddComponent<Image>().color = new Color(0.12f, 0.14f, 0.2f, 0.85f);
 
             var pauseIconSprite = CreateAndSavePixelSprite(ArtFolder, "RoguelikePauseIconSprite", PauseIconPixels, PauseIconPixel);
@@ -217,14 +217,17 @@ namespace RogueLike.EditorTools
             var elapsedTimeDisplay = timerTextGo.AddComponent<ElapsedTimeDisplay>();
             new SerializedObject(elapsedTimeDisplay).ApplyTimeText(timerText);
 
+            var currencyIconSprite = CreateAndSaveSquareSprite("RoguelikeCurrencyIconSprite", new Color(0.95f, 0.8f, 0.25f));
+            CreateIconCounter(canvasGo.transform, "CurrencyCount", currencyIconSprite, new Vector2(-24f, -28f), "0");
+
             var killIconSprite = CreateAndSaveSquareSprite("RoguelikeKillIconSprite", new Color(0.85f, 0.25f, 0.25f));
-            var killCountText = CreateIconCounter(canvasGo.transform, "KillCount", killIconSprite, new Vector2(-24f, -32f), "0");
+            var killCountText = CreateIconCounter(canvasGo.transform, "KillCount", killIconSprite, new Vector2(-24f, -100f), "0");
 
             // --- Experience bar (segmented) + level readout ---
-            var (experienceSegments, levelTextComponent) = CreateExperienceBar(canvasGo.transform, new Vector2(0f, -190f), ExperienceSegmentCount);
+            var (experienceSegments, levelTextComponent) = CreateExperienceBar(canvasGo.transform, new Vector2(0f, -220f), ExperienceSegmentCount);
 
             var healthDotSprite = CreateAndSavePixelSprite(ArtFolder, "RoguelikeHealthDotSprite", HealthDotPixels, HealthDotPixel);
-            var healthDots = CreateHealthDots(canvasGo.transform, healthDotSprite, new Vector2(40f, -250f), MaxHealthDots);
+            var healthDots = CreateHealthDots(canvasGo.transform, healthDotSprite, new Vector2(40f, -280f), MaxHealthDots);
 
             // --- Skill slots: bottom-center, arranged by a HorizontalLayoutGroup ---
             var (skillIcons, skillLevels) = CreateSkillIconRow(canvasGo.transform, "Skill", new Vector2(0f, 150f), MaxSkillIconSlots);
@@ -540,8 +543,8 @@ namespace RogueLike.EditorTools
 
         // --- Skill loadout icons ----------------------------------------------
         private const int MaxSkillIconSlots = 6;
-        private const float SkillIconSize = 72f;
-        private const float SkillIconSpacing = 80f;
+        private const float SkillIconSize = 130f;
+        private const float SkillIconSpacing = 146f;
 
         // Each slot is a dark background square with an Icon image (starts
         // hidden; SkillLoadoutUI enables/assigns it once a skill occupies
@@ -591,9 +594,10 @@ namespace RogueLike.EditorTools
                 levelRt.anchorMax = new Vector2(1f, 0f);
                 levelRt.pivot = new Vector2(1f, 0f);
                 levelRt.anchoredPosition = Vector2.zero;
-                levelRt.sizeDelta = new Vector2(32f, 22f);
+                levelRt.sizeDelta = new Vector2(48f, 34f);
                 var levelText = levelGo.GetComponent<Text>();
-                levelText.fontSize = 18;
+                levelText.fontSize = 28;
+                levelText.fontStyle = FontStyle.Bold;
                 levelText.alignment = TextAnchor.LowerRight;
 
                 icons[i] = iconImg;

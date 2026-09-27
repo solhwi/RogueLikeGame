@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Platformer.Combat.ActiveSkillDefinition
   skillId: basic_shot
   displayName: Basic Shot
-  icon: {fileID: 4381931200425510430, guid: 5c346c96390fd5f40bcbd05853e8125f, type: 2}
+  icon: {fileID: 1660612039282668784, guid: 5c346c96390fd5f40bcbd05853e8125f, type: 2}
   description: "\uC804\uBC29\uC73C\uB85C \uD22C\uC0AC\uCCB4\uB97C \uBC1C\uC0AC\uD55C\uB2E4."
   maxLevel: 5
   projectilePrefab: {fileID: 3817617620659523366, guid: 9cb9cdda8fea0394789926e8aa9d7918, type: 3}

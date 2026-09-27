@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Platformer.Combat.PassiveSkillDefinition
   skillId: MagnetUp
   displayName: Loot Magnet
-  icon: {fileID: 5955059378796366423, guid: c97de45d2dfb71140b551f27e1eda11d, type: 2}
+  icon: {fileID: -1313833700930415667, guid: c97de45d2dfb71140b551f27e1eda11d, type: 2}
   description: "\uC544\uC774\uD15C \uD68D\uB4DD \uBC94\uC704\uAC00 \uC99D\uAC00\uD55C\uB2E4."
   maxLevel: 5
   statBonuses:
