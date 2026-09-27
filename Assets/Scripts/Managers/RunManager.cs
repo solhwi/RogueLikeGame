@@ -1,6 +1,7 @@
 using UnityEngine;
 using RogueLike.Combat;
 using RogueLike.Core;
+using RogueLike.Items;
 using RogueLike.Level;
 
 namespace RogueLike.Managers
@@ -18,6 +19,7 @@ namespace RogueLike.Managers
         [SerializeField] private PlayerSkillLoadout skillLoadout;
         [SerializeField] private SkillDefinition[] availableSkillPool;
         [SerializeField] private int skillChoiceCount = 3;
+        [SerializeField] private ItemInventory itemInventory;
 
         private void OnEnable()
         {
@@ -54,6 +56,7 @@ namespace RogueLike.Managers
             bounds.Initialize(chapter.MapType, chapter.MapBoundsSize, player.position);
             ExperienceManager.Instance?.ResetRun();
             KillCounter.Instance?.ResetRun();
+            itemInventory?.ResetRun();
         }
 
         private void Update()

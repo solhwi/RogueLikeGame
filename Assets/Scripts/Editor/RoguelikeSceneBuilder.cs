@@ -81,6 +81,25 @@ namespace RogueLike.EditorTools
             var throwingKnifeIcon = CreateAndSaveSquareSprite("ItemIcon_ThrowingKnife", new Color(0.85f, 0.85f, 0.90f));
             var throwingKnifeItem = CreateProjectileItem(projectilePrefab, throwingKnifeIcon, "throwing_knife", "Throwing Knife", "가장 가까운 적에게 칼을 자동으로 던진다.");
 
+            var itemDatabase = CreateAsset<ItemDatabase>($"{DataFolder}/Items", "ItemDatabase");
+            var itemDatabaseSO = new SerializedObject(itemDatabase);
+            var databaseItemsProp = itemDatabaseSO.FindProperty("items");
+            databaseItemsProp.arraySize = 1;
+            databaseItemsProp.GetArrayElementAtIndex(0).objectReferenceValue = throwingKnifeItem;
+            itemDatabaseSO.ApplyModifiedProperties();
+
+            // Asset rather than a scene component, so it's referenced the
+            // same way from the player's loadout, the UI and RunManager
+            // (which calls ResetRun() on it) — see ItemInventory's own
+            // comment for why.
+            var itemInventory = CreateAsset<ItemInventory>($"{DataFolder}/Items", "PlayerItemInventory");
+            var itemInventorySO = new SerializedObject(itemInventory);
+            itemInventorySO.FindProperty("database").objectReferenceValue = itemDatabase;
+            var startingItemsProp = itemInventorySO.FindProperty("startingItems");
+            startingItemsProp.arraySize = 1;
+            startingItemsProp.GetArrayElementAtIndex(0).objectReferenceValue = throwingKnifeItem;
+            itemInventorySO.ApplyModifiedProperties();
+
             var zombieDefinition = CreateZombieDefinition(enemyPrefab, gemPrefab);
             var waveData = CreateWaveData(zombieDefinition);
             CreateChapterDefinition(waveData);
@@ -117,23 +136,11 @@ namespace RogueLike.EditorTools
             var lootMagnet = playerGo.GetComponent<LootMagnet>();
             new SerializedObject(lootMagnet).ApplyLootLayer(lootLayer);
 
-            // --- Item-skill inventory/loadout (item = skill; see Items/*) ---
-            var itemInventory = playerGo.AddComponent<ItemInventory>();
+            // --- Item-skill loadout (item = skill; see Items/*) ---
+            // ItemInventory is a ScriptableObject asset (created above,
+            // outside the scene) rather than a player component.
             var itemLoadout = playerGo.AddComponent<ItemSkillLoadout>();
             new SerializedObject(itemLoadout).ApplyEnemyLayer(enemyLayer);
-
-            // Runtime lists on ItemInventory/ItemSkillLoadout aren't
-            // serialized fields, so Add()/TryEquip() called here (at
-            // edit time, while building the scene) wouldn't survive into
-            // the saved scene. Seed ownership through the serialized
-            // startingItems field instead — Awake() turns it into a real
-            // owned ItemInstance once the scene actually plays, and the
-            // player equips it themselves via the item-skill slot UI.
-            var itemInventorySO = new SerializedObject(itemInventory);
-            var startingItemsProp = itemInventorySO.FindProperty("startingItems");
-            startingItemsProp.arraySize = 1;
-            startingItemsProp.GetArrayElementAtIndex(0).objectReferenceValue = throwingKnifeItem;
-            itemInventorySO.ApplyModifiedProperties();
 
             // --- Run manager (waves + bounds) ---
             var runManagerGo = new GameObject("RunManager");
@@ -167,6 +174,7 @@ namespace RogueLike.EditorTools
             runManagerSO.FindProperty("waveSpawner").objectReferenceValue = waveSpawner;
             runManagerSO.FindProperty("bounds").objectReferenceValue = chapterBounds;
             runManagerSO.FindProperty("skillLoadout").objectReferenceValue = skillLoadout;
+            runManagerSO.FindProperty("itemInventory").objectReferenceValue = itemInventory;
             var skillPoolProp = runManagerSO.FindProperty("availableSkillPool");
             skillPoolProp.arraySize = 3;
             skillPoolProp.GetArrayElementAtIndex(0).objectReferenceValue = activeSkill;
