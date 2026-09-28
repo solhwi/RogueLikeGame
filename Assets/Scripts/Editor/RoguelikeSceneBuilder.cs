@@ -65,15 +65,18 @@ namespace RogueLike.EditorTools
             var enemySprite = CreateAndSaveSquareSprite("RoguelikeEnemySprite", new Color(0.55f, 0.85f, 0.25f));
             var projectileSprite = CreateAndSaveSquareSprite("RoguelikeProjectileSprite", new Color(0.95f, 0.85f, 0.20f));
             var gemSprite = CreateAndSaveSquareSprite("RoguelikeGemSprite", new Color(0.35f, 0.90f, 0.95f));
+            var bladeSprite = CreateAndSaveSquareSprite("RoguelikeBladeSprite", new Color(0.9f, 0.3f, 0.5f));
 
             var projectilePrefab = CreateProjectilePrefab(projectileSprite);
             var enemyPrefab = CreateEnemyPrefab(enemySprite, enemyLayer);
             var gemPrefab = CreateGemPrefab(gemSprite, lootLayer);
+            var bladePrefab = CreateOrbitingBladePrefab(bladeSprite);
 
             var basicShotIcon = CreateAndSaveSquareSprite("ItemIcon_BasicShot", new Color(0.95f, 0.65f, 0.20f));
             var moveSpeedIcon = CreateAndSaveSquareSprite("ItemIcon_MoveSpeedUp", new Color(0.45f, 0.90f, 0.45f));
             var magnetIcon = CreateAndSaveSquareSprite("ItemIcon_MagnetUp", new Color(0.75f, 0.45f, 0.95f));
             var throwingKnifeIcon = CreateAndSaveSquareSprite("ItemIcon_ThrowingKnife", new Color(0.85f, 0.85f, 0.90f));
+            var orbitingBladeIcon = CreateAndSaveSquareSprite("ItemIcon_OrbitingBlade", new Color(0.9f, 0.3f, 0.5f));
 
             // Everything the player can end up with is an item: some start
             // owned, some are offered on level-up — see RunManager's
@@ -82,11 +85,12 @@ namespace RogueLike.EditorTools
             var moveSpeedItem = CreateStatBonusItem(moveSpeedIcon, "move_speed_up", "Swift Boots", StatType.MoveSpeedMultiplier, 0.15f, "이동 속도가 증가한다.");
             var magnetItem = CreateStatBonusItem(magnetIcon, "magnet_up", "Loot Magnet", StatType.PickupRange, 1.5f, "아이템 획득 범위가 증가한다.");
             var throwingKnifeItem = CreateProjectileItem(projectilePrefab, throwingKnifeIcon, "throwing_knife", "Throwing Knife", "가장 가까운 적에게 칼을 자동으로 던진다.");
+            var orbitingBladeItem = CreateOrbitingBladeItem(bladePrefab, orbitingBladeIcon, "orbiting_blade", "Orbiting Blade", "캐릭터 주위를 회전하며 닿는 적에게 피해를 준다.");
 
             var itemDatabase = CreateAsset<ItemDatabase>($"{DataFolder}/Items", "ItemDatabase");
             var itemDatabaseSO = new SerializedObject(itemDatabase);
             var databaseItemsProp = itemDatabaseSO.FindProperty("items");
-            var allItems = new ItemDefinition[] { basicShotItem, moveSpeedItem, magnetItem, throwingKnifeItem };
+            var allItems = new ItemDefinition[] { basicShotItem, moveSpeedItem, magnetItem, throwingKnifeItem, orbitingBladeItem };
             AssignArray(databaseItemsProp, allItems);
             itemDatabaseSO.ApplyModifiedProperties();
 
@@ -177,7 +181,7 @@ namespace RogueLike.EditorTools
             runManagerSO.FindProperty("itemInventory").objectReferenceValue = itemInventory;
             runManagerSO.FindProperty("itemLoadout").objectReferenceValue = itemLoadout;
             var itemPoolProp = runManagerSO.FindProperty("availableItemPool");
-            AssignArray(itemPoolProp, new ItemDefinition[] { basicShotItem, moveSpeedItem, magnetItem });
+            AssignArray(itemPoolProp, new ItemDefinition[] { basicShotItem, moveSpeedItem, magnetItem, orbitingBladeItem });
             runManagerSO.FindProperty("itemChoiceCount").intValue = 3;
             runManagerSO.ApplyModifiedProperties();
 
@@ -353,6 +357,28 @@ namespace RogueLike.EditorTools
             return SaveAsPrefabAndDestroy(go, $"{PrefabFolder}/RoguelikeProjectile.prefab");
         }
 
+        private static GameObject CreateOrbitingBladePrefab(Sprite sprite)
+        {
+            var go = new GameObject("RoguelikeOrbitingBlade");
+            go.transform.localScale = new Vector3(0.35f, 0.35f, 1f);
+
+            var sr = go.AddComponent<SpriteRenderer>();
+            sr.sprite = sprite;
+            sr.sharedMaterial = GetSpriteMaterial();
+            sr.sortingOrder = 6;
+
+            var col = go.AddComponent<CircleCollider2D>();
+            col.isTrigger = true;
+            col.radius = 0.5f;
+
+            // Damage reuses Hazard (the same "damage IDamageable on
+            // contact" component enemy hitboxes use) — see
+            // OrbitingBladeItemDefinition for why.
+            go.AddComponent<Hazard>();
+
+            return SaveAsPrefabAndDestroy(go, $"{PrefabFolder}/RoguelikeOrbitingBlade.prefab");
+        }
+
         private static GameObject CreateEnemyPrefab(Sprite sprite, int enemyLayer)
         {
             var go = new GameObject("RoguelikeEnemy_Zombie");
@@ -435,6 +461,22 @@ namespace RogueLike.EditorTools
             so.FindProperty("projectileCount").intValue = 1;
             so.FindProperty("pierceCount").intValue = 0;
             so.FindProperty("projectileSpeed").floatValue = 9f;
+            so.ApplyModifiedProperties();
+            return item;
+        }
+
+        private static OrbitingBladeItemDefinition CreateOrbitingBladeItem(GameObject bladePrefab, Sprite icon, string itemKey, string displayName, string description)
+        {
+            var item = CreateAsset<OrbitingBladeItemDefinition>($"{DataFolder}/Items", displayName.Replace(" ", string.Empty));
+            var so = new SerializedObject(item);
+            so.FindProperty("itemKey").stringValue = itemKey;
+            so.FindProperty("displayName").stringValue = displayName;
+            so.FindProperty("icon").objectReferenceValue = icon;
+            so.FindProperty("description").stringValue = description;
+            so.FindProperty("bladePrefab").objectReferenceValue = bladePrefab;
+            so.FindProperty("orbitRadius").floatValue = 2f;
+            so.FindProperty("orbitDegreesPerSecond").floatValue = 180f;
+            so.FindProperty("damage").intValue = 2;
             so.ApplyModifiedProperties();
             return item;
         }
