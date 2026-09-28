@@ -70,7 +70,7 @@ namespace RogueLike.EditorTools
             var projectilePrefab = CreateProjectilePrefab(projectileSprite);
             var enemyPrefab = CreateEnemyPrefab(enemySprite, enemyLayer);
             var gemPrefab = CreateGemPrefab(gemSprite, lootLayer);
-            var bladePrefab = CreateOrbitingBladePrefab(bladeSprite);
+            var bladePrefab = CreateOrbitingBladePrefab(bladeSprite, "RoguelikeOrbitingBlade");
 
             var basicShotIcon = CreateAndSaveSquareSprite("ItemIcon_BasicShot", new Color(0.95f, 0.65f, 0.20f));
             var moveSpeedIcon = CreateAndSaveSquareSprite("ItemIcon_MoveSpeedUp", new Color(0.45f, 0.90f, 0.45f));
@@ -87,10 +87,44 @@ namespace RogueLike.EditorTools
             var throwingKnifeItem = CreateProjectileItem(projectilePrefab, throwingKnifeIcon, "throwing_knife", "Throwing Knife", "가장 가까운 적에게 칼을 자동으로 던진다.");
             var orbitingBladeItem = CreateOrbitingBladeItem(bladePrefab, orbitingBladeIcon, "orbiting_blade", "Orbiting Blade", "캐릭터 주위를 회전하며 닿는 적에게 피해를 준다.");
 
+            // --- Named batch: 까마귀/곰돌이/오사카/비둘기/빨간차/멘헤라 ---
+            // Crow/Pigeon reuse the shared projectile prefab (like Basic
+            // Shot/Throwing Knife above); Red Car/Menhera each need their
+            // own orbiting-blade prefab so their sprites don't collide.
+            var crowIcon = CreateAndSaveSquareSprite("ItemIcon_Crow", new Color(0.12f, 0.12f, 0.14f));
+            var pigeonIcon = CreateAndSaveSquareSprite("ItemIcon_Pigeon", new Color(0.75f, 0.75f, 0.8f));
+            var redCarIcon = CreateAndSaveSquareSprite("ItemIcon_RedCar", new Color(0.85f, 0.1f, 0.1f));
+            var menheraIcon = CreateAndSaveSquareSprite("ItemIcon_Menhera", new Color(0.55f, 0.15f, 0.55f));
+            var teddyBearIcon = CreateAndSaveSquareSprite("ItemIcon_TeddyBear", new Color(0.55f, 0.35f, 0.2f));
+            var osakaIcon = CreateAndSaveSquareSprite("ItemIcon_Osaka", new Color(0.9f, 0.6f, 0.3f));
+
+            var redCarSprite = CreateAndSaveSquareSprite("RoguelikeRedCarSprite", new Color(0.85f, 0.1f, 0.1f));
+            var menheraSprite = CreateAndSaveSquareSprite("RoguelikeMenheraSprite", new Color(0.55f, 0.15f, 0.55f));
+            var redCarPrefab = CreateOrbitingBladePrefab(redCarSprite, "RoguelikeRedCarBlade");
+            var menheraPrefab = CreateOrbitingBladePrefab(menheraSprite, "RoguelikeMenheraBlade");
+
+            var crowItem = CreateProjectileItem(projectilePrefab, crowIcon, "crow", "까마귀", "가장 가까운 적에게 급강하하여 부리로 쫀다.");
+            var pigeonItem = CreateProjectileItem(projectilePrefab, pigeonIcon, "pigeon", "비둘기", "가장 가까운 적에게 잇달아 날아가 부딪힌다.");
+            var redCarItem = CreateOrbitingBladeItem(redCarPrefab, redCarIcon, "red_car", "빨간차", "캐릭터 주위를 질주하며 부딪히는 모든 적을 들이받는다.");
+            var menheraItem = CreateOrbitingBladeItem(menheraPrefab, menheraIcon, "menhera", "멘헤라", "캐릭터에게 바짝 붙어 빠르게 맴돌며 닿는 적에게 피해를 준다.");
+            var teddyBearItem = CreateStatBonusItem(teddyBearIcon, "teddy_bear", "곰돌이", StatType.PickupRange, 2f, "포근한 곰인형이 주변의 아이템을 끌어당긴다.");
+            var osakaItem = CreateStatBonusItem(osakaIcon, "osaka", "오사카", StatType.CooldownReduction, 0.1f, "엉뚱하지만 가끔 번뜩이는 재치로 스킬 재사용 대기시간이 줄어든다.");
+
+            // Tune the two orbiting items apart from the base Orbiting
+            // Blade item (and each other) so they don't just play identically.
+            ApplyOrbitingBladeStats(redCarItem, orbitRadius: 2.5f, orbitDegreesPerSecond: 260f, damage: 4);
+            ApplyOrbitingBladeStats(menheraItem, orbitRadius: 1f, orbitDegreesPerSecond: 420f, damage: 3);
+            ApplyProjectileStats(crowItem, range: 6f, cooldown: 1f, damage: 4, projectileCount: 1, pierceCount: 1, projectileSpeed: 12f);
+            ApplyProjectileStats(pigeonItem, range: 5f, cooldown: 0.8f, damage: 2, projectileCount: 2, pierceCount: 0, projectileSpeed: 8f);
+
             var itemDatabase = CreateAsset<ItemDatabase>($"{DataFolder}/Items", "ItemDatabase");
             var itemDatabaseSO = new SerializedObject(itemDatabase);
             var databaseItemsProp = itemDatabaseSO.FindProperty("items");
-            var allItems = new ItemDefinition[] { basicShotItem, moveSpeedItem, magnetItem, throwingKnifeItem, orbitingBladeItem };
+            var allItems = new ItemDefinition[]
+            {
+                basicShotItem, moveSpeedItem, magnetItem, throwingKnifeItem, orbitingBladeItem,
+                crowItem, pigeonItem, redCarItem, menheraItem, teddyBearItem, osakaItem,
+            };
             AssignArray(databaseItemsProp, allItems);
             itemDatabaseSO.ApplyModifiedProperties();
 
@@ -102,8 +136,10 @@ namespace RogueLike.EditorTools
             var itemInventorySO = new SerializedObject(itemInventory);
             itemInventorySO.FindProperty("database").objectReferenceValue = itemDatabase;
             var startingItemsProp = itemInventorySO.FindProperty("startingItems");
-            startingItemsProp.arraySize = 1;
-            startingItemsProp.GetArrayElementAtIndex(0).objectReferenceValue = throwingKnifeItem;
+            AssignArray(startingItemsProp, new ItemDefinition[]
+            {
+                throwingKnifeItem, crowItem, pigeonItem, redCarItem, menheraItem, teddyBearItem, osakaItem,
+            });
             itemInventorySO.ApplyModifiedProperties();
 
             var zombieDefinition = CreateZombieDefinition(enemyPrefab, gemPrefab);
@@ -357,9 +393,14 @@ namespace RogueLike.EditorTools
             return SaveAsPrefabAndDestroy(go, $"{PrefabFolder}/RoguelikeProjectile.prefab");
         }
 
-        private static GameObject CreateOrbitingBladePrefab(Sprite sprite)
+        // Takes an explicit prefabName (rather than a fixed one like the
+        // other CreatexxxPrefab helpers) because multiple orbiting items
+        // each need their own prefab asset — reusing one path across calls
+        // would just overwrite the previous item's prefab with the new
+        // sprite baked in.
+        private static GameObject CreateOrbitingBladePrefab(Sprite sprite, string prefabName)
         {
-            var go = new GameObject("RoguelikeOrbitingBlade");
+            var go = new GameObject(prefabName);
             go.transform.localScale = new Vector3(0.35f, 0.35f, 1f);
 
             var sr = go.AddComponent<SpriteRenderer>();
@@ -376,7 +417,7 @@ namespace RogueLike.EditorTools
             // OrbitingBladeItemDefinition for why.
             go.AddComponent<Hazard>();
 
-            return SaveAsPrefabAndDestroy(go, $"{PrefabFolder}/RoguelikeOrbitingBlade.prefab");
+            return SaveAsPrefabAndDestroy(go, $"{PrefabFolder}/{prefabName}.prefab");
         }
 
         private static GameObject CreateEnemyPrefab(Sprite sprite, int enemyLayer)
@@ -479,6 +520,31 @@ namespace RogueLike.EditorTools
             so.FindProperty("damage").intValue = 2;
             so.ApplyModifiedProperties();
             return item;
+        }
+
+        // Overrides for a specific orbiting/projectile item after it's been
+        // created with CreateOrbitingBladeItem/CreateProjectileItem's
+        // defaults, so callers only have to name the stats they actually
+        // want to differ instead of repeating every field.
+        private static void ApplyOrbitingBladeStats(OrbitingBladeItemDefinition item, float orbitRadius, float orbitDegreesPerSecond, int damage)
+        {
+            var so = new SerializedObject(item);
+            so.FindProperty("orbitRadius").floatValue = orbitRadius;
+            so.FindProperty("orbitDegreesPerSecond").floatValue = orbitDegreesPerSecond;
+            so.FindProperty("damage").intValue = damage;
+            so.ApplyModifiedProperties();
+        }
+
+        private static void ApplyProjectileStats(ProjectileItemDefinition item, float range, float cooldown, int damage, int projectileCount, int pierceCount, float projectileSpeed)
+        {
+            var so = new SerializedObject(item);
+            so.FindProperty("range").floatValue = range;
+            so.FindProperty("cooldown").floatValue = cooldown;
+            so.FindProperty("damage").intValue = damage;
+            so.FindProperty("projectileCount").intValue = projectileCount;
+            so.FindProperty("pierceCount").intValue = pierceCount;
+            so.FindProperty("projectileSpeed").floatValue = projectileSpeed;
+            so.ApplyModifiedProperties();
         }
 
         private static EnemyDefinition CreateZombieDefinition(GameObject enemyPrefab, GameObject gemPrefab)
