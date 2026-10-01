@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: 1847c44f729b68e49ba63610abdf9132
+timeCreated: 1518248465
+licenseType: Store
+ShaderImporter:
+  defaultTextures: []
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 84992
+  packageName: Haon SD series Bundle
+  packageVersion: 3.1
+  assetPath: Assets/SD Unity-Chan Haon Custom/Shader/Unity-chan Toon Shader Ver 2.0.6/Tess/Toon_OutlineObject_Tess.shader
+  uploadId: 418201

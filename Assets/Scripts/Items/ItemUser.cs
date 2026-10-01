@@ -17,11 +17,18 @@ namespace RogueLike.Items
         public LayerMask EnemyLayer { get; }
         public ItemSkillLoadout Loadout { get; }
 
-        public ItemUser(PlayerController character, LayerMask enemyLayer, ItemSkillLoadout loadout)
+        // Null when the character has no CharacterAppearanceAdapter (e.g.
+        // no 3D CharacterModule set up on this GameObject) — appearance
+        // items no-op via the ?. in AppearanceItemDefinition rather than
+        // every other item needing to care that this can be absent.
+        public CharacterAppearanceAdapter Appearance { get; }
+
+        public ItemUser(PlayerController character, LayerMask enemyLayer, ItemSkillLoadout loadout, CharacterAppearanceAdapter appearance)
         {
             Character = character;
             EnemyLayer = enemyLayer;
             Loadout = loadout;
+            Appearance = appearance;
         }
 
         public Transform FindNearestEnemy(float range)

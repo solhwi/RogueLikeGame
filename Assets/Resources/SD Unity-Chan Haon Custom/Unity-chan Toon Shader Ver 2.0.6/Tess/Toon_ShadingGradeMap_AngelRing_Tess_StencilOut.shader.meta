@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: 18c9172cdf36a344f9aca9bbc0e7002d
+timeCreated: 1518248463
+licenseType: Store
+ShaderImporter:
+  defaultTextures: []
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 84992
+  packageName: Haon SD series Bundle
+  packageVersion: 3.1
+  assetPath: Assets/SD Unity-Chan Haon Custom/Shader/Unity-chan Toon Shader Ver 2.0.6/Tess/Toon_ShadingGradeMap_AngelRing_Tess_StencilOut.shader
+  uploadId: 418201

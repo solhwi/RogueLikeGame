@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: 1d10c7840eb6ba74c889a27f14ba6081
+timeCreated: 1496949323
+licenseType: Store
+ShaderImporter:
+  defaultTextures: []
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 84992
+  packageName: Haon SD series Bundle
+  packageVersion: 3.1
+  assetPath: Assets/SD Unity-Chan Haon Custom/Shader/Unity-chan Toon Shader Ver 2.0.6/Toon_DoubleShadeWithFeather_Mobile.shader
+  uploadId: 418201

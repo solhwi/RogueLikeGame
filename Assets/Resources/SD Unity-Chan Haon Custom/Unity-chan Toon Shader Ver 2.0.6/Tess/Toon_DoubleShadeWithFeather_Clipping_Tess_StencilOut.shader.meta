@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: c4aed8662ca0f194284f3ab649e66d23
+timeCreated: 1518248477
+licenseType: Store
+ShaderImporter:
+  defaultTextures: []
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 84992
+  packageName: Haon SD series Bundle
+  packageVersion: 3.1
+  assetPath: Assets/SD Unity-Chan Haon Custom/Shader/Unity-chan Toon Shader Ver 2.0.6/Tess/Toon_DoubleShadeWithFeather_Clipping_Tess_StencilOut.shader
+  uploadId: 418201

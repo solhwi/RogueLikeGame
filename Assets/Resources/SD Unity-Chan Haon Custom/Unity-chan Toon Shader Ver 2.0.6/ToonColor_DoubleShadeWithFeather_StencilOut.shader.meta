@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: 2e5cc2da6af713844956264245e092e4
+timeCreated: 1482811030
+licenseType: Store
+ShaderImporter:
+  defaultTextures: []
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 84992
+  packageName: Haon SD series Bundle
+  packageVersion: 3.1
+  assetPath: Assets/SD Unity-Chan Haon Custom/Shader/Unity-chan Toon Shader Ver 2.0.6/ToonColor_DoubleShadeWithFeather_StencilOut.shader
+  uploadId: 418201

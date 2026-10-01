@@ -28,7 +28,7 @@ namespace RogueLike.Items
         {
             equippedItems = new ItemInstance[slotCount];
             behaviors = new ItemSkillBehavior[slotCount];
-            user = new ItemUser(GetComponent<PlayerController>(), enemyLayer, this);
+            user = new ItemUser(GetComponent<PlayerController>(), enemyLayer, this, GetComponent<CharacterAppearanceAdapter>());
         }
 
         private void Update()
