@@ -13,9 +13,7 @@ namespace RogueLike.Items
     }
 
     // Every item the run currently owns (found, bought, rewarded...),
-    // independent of which of them are equipped into skill slots. Separate
-    // from Items.PlayerInventory, which tracks gear/equipment rarity — this
-    // one is for item-skills only.
+    // independent of which of them are equipped into skill slots.
     //
     // A ScriptableObject asset rather than a MonoBehaviour: it needs to be
     // reachable from anywhere (UI, loadout, save system) by a plain asset

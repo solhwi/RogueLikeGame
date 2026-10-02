@@ -1,8 +1,7 @@
 namespace RogueLike.Items
 {
     // Runtime state for one owned item copy. Plain class, not a
-    // MonoBehaviour — owned and tracked by ItemInventory, same shape as
-    // Items.EquipmentInstance elsewhere in the project.
+    // MonoBehaviour — owned and tracked by ItemInventory.
     public class ItemInstance
     {
         public ItemDefinition Definition { get; }
