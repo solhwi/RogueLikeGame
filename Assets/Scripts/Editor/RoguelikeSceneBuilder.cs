@@ -148,10 +148,10 @@ namespace RogueLike.EditorTools
             });
             itemInventorySO.ApplyModifiedProperties();
 
-            var zombieDefinition = CreateEnemyDefinition("BasicZombie", "basic_zombie", enemyPrefab, maxHealth: 5, moveSpeed: 1.5f, contactDamage: 1, tier: EnemyTier.Normal, gemPrefab: gemPrefab, experienceReward: 1);
-            var runnerDefinition = CreateEnemyDefinition("Runner", "runner", runnerPrefab, maxHealth: 2, moveSpeed: 3.2f, contactDamage: 1, tier: EnemyTier.Normal, gemPrefab: gemPrefab, experienceReward: 1);
-            var bruteDefinition = CreateEnemyDefinition("Brute", "brute", brutePrefab, maxHealth: 18, moveSpeed: 0.9f, contactDamage: 2, tier: EnemyTier.Elite, gemPrefab: gemPrefab, experienceReward: 3);
-            var bossDefinition = CreateEnemyDefinition("Boss", "boss", bossPrefab, maxHealth: 120, moveSpeed: 1.1f, contactDamage: 3, tier: EnemyTier.Boss, gemPrefab: gemPrefab, experienceReward: 20);
+            var zombieDefinition = CreateEnemyDefinition("BasicZombie", "basic_zombie", enemyPrefab, maxHealth: 5, moveSpeed: 1.5f, contactDamage: 1, tier: EnemyTier.Normal, gemPrefab: gemPrefab, experienceReward: 1, goldReward: 1);
+            var runnerDefinition = CreateEnemyDefinition("Runner", "runner", runnerPrefab, maxHealth: 2, moveSpeed: 3.2f, contactDamage: 1, tier: EnemyTier.Normal, gemPrefab: gemPrefab, experienceReward: 1, goldReward: 1);
+            var bruteDefinition = CreateEnemyDefinition("Brute", "brute", brutePrefab, maxHealth: 18, moveSpeed: 0.9f, contactDamage: 2, tier: EnemyTier.Elite, gemPrefab: gemPrefab, experienceReward: 3, goldReward: 3);
+            var bossDefinition = CreateEnemyDefinition("Boss", "boss", bossPrefab, maxHealth: 120, moveSpeed: 1.1f, contactDamage: 3, tier: EnemyTier.Boss, gemPrefab: gemPrefab, experienceReward: 20, goldReward: 25);
             var waveData = CreateWaveData(zombieDefinition, runnerDefinition, bruteDefinition, bossDefinition);
             CreateChapterDefinition(waveData);
 
@@ -253,6 +253,7 @@ namespace RogueLike.EditorTools
             new GameObject("AudioManager").AddComponent<AudioManager>();
             new GameObject("ExperienceManager").AddComponent<ExperienceManager>();
             new GameObject("KillCounter").AddComponent<KillCounter>();
+            new GameObject("MetaProgressionManager").AddComponent<MetaProgressionManager>();
 
             // --- UI ---
             var canvasGo = new GameObject("Canvas");
@@ -295,7 +296,7 @@ namespace RogueLike.EditorTools
             new SerializedObject(elapsedTimeDisplay).ApplyTimeText(timerText);
 
             var currencyIconSprite = CreateAndSaveSquareSprite("RoguelikeCurrencyIconSprite", new Color(0.95f, 0.8f, 0.25f));
-            CreateIconCounter(canvasGo.transform, "CurrencyCount", currencyIconSprite, new Vector2(-24f, -28f), "0");
+            var currencyText = CreateIconCounter(canvasGo.transform, "CurrencyCount", currencyIconSprite, new Vector2(-24f, -28f), "0");
 
             var killIconSprite = CreateAndSaveSquareSprite("RoguelikeKillIconSprite", new Color(0.85f, 0.25f, 0.25f));
             var killCountText = CreateIconCounter(canvasGo.transform, "KillCount", killIconSprite, new Vector2(-24f, -100f), "0");
@@ -352,6 +353,7 @@ namespace RogueLike.EditorTools
             AssignArray(chapterHudSO.FindProperty("experienceSegments"), experienceSegments);
             chapterHudSO.FindProperty("levelText").objectReferenceValue = levelTextComponent;
             chapterHudSO.FindProperty("killCountText").objectReferenceValue = killCountText;
+            chapterHudSO.FindProperty("currencyText").objectReferenceValue = currencyText;
             chapterHudSO.ApplyModifiedProperties();
 
             pauseButton.gameObject.AddComponent<PauseButton>();
@@ -560,7 +562,7 @@ namespace RogueLike.EditorTools
             so.ApplyModifiedProperties();
         }
 
-        private static EnemyDefinition CreateEnemyDefinition(string assetName, string enemyId, GameObject enemyPrefab, int maxHealth, float moveSpeed, int contactDamage, EnemyTier tier, GameObject gemPrefab, int experienceReward)
+        private static EnemyDefinition CreateEnemyDefinition(string assetName, string enemyId, GameObject enemyPrefab, int maxHealth, float moveSpeed, int contactDamage, EnemyTier tier, GameObject gemPrefab, int experienceReward, int goldReward)
         {
             var definition = CreateAsset<EnemyDefinition>($"{DataFolder}/Enemies", assetName);
             var so = new SerializedObject(definition);
@@ -572,6 +574,7 @@ namespace RogueLike.EditorTools
             so.FindProperty("tier").enumValueIndex = (int)tier;
             so.FindProperty("experienceGemPrefab").objectReferenceValue = gemPrefab;
             so.FindProperty("experienceReward").intValue = experienceReward;
+            so.FindProperty("goldReward").intValue = goldReward;
             so.ApplyModifiedProperties();
             return definition;
         }

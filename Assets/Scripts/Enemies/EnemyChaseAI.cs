@@ -64,6 +64,11 @@ namespace RogueLike.Enemies
             KillCounter.Instance?.RegisterKill();
             SpawnExperienceGem();
 
+            if (definition != null && definition.GoldReward > 0)
+            {
+                MetaProgressionManager.Instance?.AddGold(definition.GoldReward);
+            }
+
             if (sourcePool != null)
             {
                 sourcePool.Release(gameObject);

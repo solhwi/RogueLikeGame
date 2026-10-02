@@ -16,6 +16,7 @@ namespace RogueLike.UI
         [SerializeField] private Color emptyExperienceColor = new Color(0.15f, 0.3f, 0.1f, 0.6f);
         [SerializeField] private Text levelText;
         [SerializeField] private Text killCountText;
+        [SerializeField] private Text currencyText;
 
         private void OnEnable()
         {
@@ -33,6 +34,11 @@ namespace RogueLike.UI
             if (KillCounter.Instance != null)
             {
                 KillCounter.Instance.OnKillCountChanged += HandleKillCountChanged;
+            }
+
+            if (MetaProgressionManager.Instance != null)
+            {
+                MetaProgressionManager.Instance.OnGoldChanged += HandleGoldChanged;
             }
         }
 
@@ -56,6 +62,11 @@ namespace RogueLike.UI
             {
                 HandleExperienceChanged(ExperienceManager.Instance.CurrentExperience, ExperienceManager.Instance.ExperienceToNextLevel);
             }
+
+            if (MetaProgressionManager.Instance != null)
+            {
+                HandleGoldChanged(MetaProgressionManager.Instance.Gold);
+            }
         }
 
         private void OnDisable()
@@ -74,6 +85,11 @@ namespace RogueLike.UI
             if (KillCounter.Instance != null)
             {
                 KillCounter.Instance.OnKillCountChanged -= HandleKillCountChanged;
+            }
+
+            if (MetaProgressionManager.Instance != null)
+            {
+                MetaProgressionManager.Instance.OnGoldChanged -= HandleGoldChanged;
             }
         }
 
@@ -134,6 +150,14 @@ namespace RogueLike.UI
             if (killCountText != null)
             {
                 killCountText.text = count.ToString();
+            }
+        }
+
+        private void HandleGoldChanged(int gold)
+        {
+            if (currencyText != null)
+            {
+                currencyText.text = gold.ToString();
             }
         }
     }

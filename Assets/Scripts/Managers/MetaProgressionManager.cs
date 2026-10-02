@@ -19,6 +19,8 @@ namespace RogueLike.Managers
     {
         private const string SaveFileName = "save.json";
 
+        public event Action<int> OnGoldChanged;
+
         public int Gold { get; private set; }
 
         private SaveData data = new SaveData();
@@ -35,6 +37,7 @@ namespace RogueLike.Managers
             Gold += amount;
             data.gold = Gold;
             Save();
+            OnGoldChanged?.Invoke(Gold);
         }
 
         public bool SpendGold(int amount)
@@ -47,6 +50,7 @@ namespace RogueLike.Managers
             Gold -= amount;
             data.gold = Gold;
             Save();
+            OnGoldChanged?.Invoke(Gold);
             return true;
         }
 
