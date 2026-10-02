@@ -63,12 +63,18 @@ namespace RogueLike.EditorTools
 
             var playerSprite = CreateAndSaveSquareSprite("RoguelikePlayerSprite", new Color(0.20f, 0.55f, 0.95f));
             var enemySprite = CreateAndSaveSquareSprite("RoguelikeEnemySprite", new Color(0.55f, 0.85f, 0.25f));
+            var runnerSprite = CreateAndSaveSquareSprite("RoguelikeRunnerSprite", new Color(0.95f, 0.75f, 0.15f));
+            var bruteSprite = CreateAndSaveSquareSprite("RoguelikeBruteSprite", new Color(0.55f, 0.25f, 0.15f));
+            var bossSprite = CreateAndSaveSquareSprite("RoguelikeBossSprite", new Color(0.35f, 0.1f, 0.45f));
             var projectileSprite = CreateAndSaveSquareSprite("RoguelikeProjectileSprite", new Color(0.95f, 0.85f, 0.20f));
             var gemSprite = CreateAndSaveSquareSprite("RoguelikeGemSprite", new Color(0.35f, 0.90f, 0.95f));
             var bladeSprite = CreateAndSaveSquareSprite("RoguelikeBladeSprite", new Color(0.9f, 0.3f, 0.5f));
 
             var projectilePrefab = CreateProjectilePrefab(projectileSprite);
-            var enemyPrefab = CreateEnemyPrefab(enemySprite, enemyLayer);
+            var enemyPrefab = CreateEnemyPrefab(enemySprite, enemyLayer, "RoguelikeEnemy_Zombie", 0.8f);
+            var runnerPrefab = CreateEnemyPrefab(runnerSprite, enemyLayer, "RoguelikeEnemy_Runner", 0.6f);
+            var brutePrefab = CreateEnemyPrefab(bruteSprite, enemyLayer, "RoguelikeEnemy_Brute", 1.2f);
+            var bossPrefab = CreateEnemyPrefab(bossSprite, enemyLayer, "RoguelikeEnemy_Boss", 1.8f);
             var gemPrefab = CreateGemPrefab(gemSprite, lootLayer);
             var bladePrefab = CreateOrbitingBladePrefab(bladeSprite, "RoguelikeOrbitingBlade");
 
@@ -142,8 +148,11 @@ namespace RogueLike.EditorTools
             });
             itemInventorySO.ApplyModifiedProperties();
 
-            var zombieDefinition = CreateZombieDefinition(enemyPrefab, gemPrefab);
-            var waveData = CreateWaveData(zombieDefinition);
+            var zombieDefinition = CreateEnemyDefinition("BasicZombie", "basic_zombie", enemyPrefab, maxHealth: 5, moveSpeed: 1.5f, contactDamage: 1, tier: EnemyTier.Normal, gemPrefab: gemPrefab, experienceReward: 1);
+            var runnerDefinition = CreateEnemyDefinition("Runner", "runner", runnerPrefab, maxHealth: 2, moveSpeed: 3.2f, contactDamage: 1, tier: EnemyTier.Normal, gemPrefab: gemPrefab, experienceReward: 1);
+            var bruteDefinition = CreateEnemyDefinition("Brute", "brute", brutePrefab, maxHealth: 18, moveSpeed: 0.9f, contactDamage: 2, tier: EnemyTier.Elite, gemPrefab: gemPrefab, experienceReward: 3);
+            var bossDefinition = CreateEnemyDefinition("Boss", "boss", bossPrefab, maxHealth: 120, moveSpeed: 1.1f, contactDamage: 3, tier: EnemyTier.Boss, gemPrefab: gemPrefab, experienceReward: 20);
+            var waveData = CreateWaveData(zombieDefinition, runnerDefinition, bruteDefinition, bossDefinition);
             CreateChapterDefinition(waveData);
 
             var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
@@ -420,11 +429,15 @@ namespace RogueLike.EditorTools
             return SaveAsPrefabAndDestroy(go, $"{PrefabFolder}/{prefabName}.prefab");
         }
 
-        private static GameObject CreateEnemyPrefab(Sprite sprite, int enemyLayer)
+        // prefabName/scale are parameters (rather than the old hardcoded
+        // "zombie at 0.8") so multiple enemy types can each get their own
+        // prefab asset and silhouette size instead of colliding on one path
+        // like the orbiting-blade items did before that was fixed.
+        private static GameObject CreateEnemyPrefab(Sprite sprite, int enemyLayer, string prefabName, float scale)
         {
-            var go = new GameObject("RoguelikeEnemy_Zombie");
+            var go = new GameObject(prefabName);
             go.layer = enemyLayer;
-            go.transform.localScale = new Vector3(0.8f, 0.8f, 1f);
+            go.transform.localScale = new Vector3(scale, scale, 1f);
 
             var sr = go.AddComponent<SpriteRenderer>();
             sr.sprite = sprite;
@@ -439,7 +452,7 @@ namespace RogueLike.EditorTools
             go.AddComponent<Hazard>();
             go.AddComponent<EnemyChaseAI>();
 
-            return SaveAsPrefabAndDestroy(go, $"{PrefabFolder}/RoguelikeEnemy_Zombie.prefab");
+            return SaveAsPrefabAndDestroy(go, $"{PrefabFolder}/{prefabName}.prefab");
         }
 
         private static GameObject CreateGemPrefab(Sprite sprite, int lootLayer)
@@ -547,39 +560,51 @@ namespace RogueLike.EditorTools
             so.ApplyModifiedProperties();
         }
 
-        private static EnemyDefinition CreateZombieDefinition(GameObject enemyPrefab, GameObject gemPrefab)
+        private static EnemyDefinition CreateEnemyDefinition(string assetName, string enemyId, GameObject enemyPrefab, int maxHealth, float moveSpeed, int contactDamage, EnemyTier tier, GameObject gemPrefab, int experienceReward)
         {
-            var definition = CreateAsset<EnemyDefinition>($"{DataFolder}/Enemies", "BasicZombie");
+            var definition = CreateAsset<EnemyDefinition>($"{DataFolder}/Enemies", assetName);
             var so = new SerializedObject(definition);
-            so.FindProperty("enemyId").stringValue = "basic_zombie";
+            so.FindProperty("enemyId").stringValue = enemyId;
             so.FindProperty("prefab").objectReferenceValue = enemyPrefab;
-            so.FindProperty("maxHealth").intValue = 5;
-            so.FindProperty("moveSpeed").floatValue = 1.5f;
-            so.FindProperty("contactDamage").intValue = 1;
-            so.FindProperty("tier").enumValueIndex = (int)EnemyTier.Normal;
+            so.FindProperty("maxHealth").intValue = maxHealth;
+            so.FindProperty("moveSpeed").floatValue = moveSpeed;
+            so.FindProperty("contactDamage").intValue = contactDamage;
+            so.FindProperty("tier").enumValueIndex = (int)tier;
             so.FindProperty("experienceGemPrefab").objectReferenceValue = gemPrefab;
-            so.FindProperty("experienceReward").intValue = 1;
+            so.FindProperty("experienceReward").intValue = experienceReward;
             so.ApplyModifiedProperties();
             return definition;
         }
 
-        private static WaveData CreateWaveData(EnemyDefinition zombieDefinition)
+        // Staggered timeline: zombies from the start, runners join at 30s,
+        // brutes at 90s, and a one-off boss at 180s — enough variety that a
+        // few minutes of play actually feels different over time instead of
+        // the single always-on zombie trickle this used to be.
+        private static WaveData CreateWaveData(EnemyDefinition zombieDefinition, EnemyDefinition runnerDefinition, EnemyDefinition bruteDefinition, EnemyDefinition bossDefinition)
         {
             var waveData = CreateAsset<WaveData>($"{DataFolder}/Waves", "TestChapterWaves");
             var so = new SerializedObject(waveData);
 
             var entriesProp = so.FindProperty("entries");
-            entriesProp.arraySize = 1;
-            var entry = entriesProp.GetArrayElementAtIndex(0);
-            entry.FindPropertyRelative("enemy").objectReferenceValue = zombieDefinition;
-            entry.FindPropertyRelative("startTime").floatValue = 0f;
-            entry.FindPropertyRelative("endTime").floatValue = 99999f;
-            entry.FindPropertyRelative("spawnInterval").floatValue = 1.5f;
-            entry.FindPropertyRelative("countPerSpawn").intValue = 1;
+            entriesProp.arraySize = 3;
+            SetWaveEntry(entriesProp, 0, zombieDefinition, startTime: 0f, endTime: 99999f, spawnInterval: 1.5f, countPerSpawn: 1);
+            SetWaveEntry(entriesProp, 1, runnerDefinition, startTime: 30f, endTime: 99999f, spawnInterval: 2.5f, countPerSpawn: 1);
+            SetWaveEntry(entriesProp, 2, bruteDefinition, startTime: 90f, endTime: 99999f, spawnInterval: 6f, countPerSpawn: 1);
 
-            so.FindProperty("bossSpawnTime").floatValue = 99999f;
+            so.FindProperty("bossEnemy").objectReferenceValue = bossDefinition;
+            so.FindProperty("bossSpawnTime").floatValue = 180f;
             so.ApplyModifiedProperties();
             return waveData;
+        }
+
+        private static void SetWaveEntry(SerializedProperty entriesProp, int index, EnemyDefinition enemy, float startTime, float endTime, float spawnInterval, int countPerSpawn)
+        {
+            var entry = entriesProp.GetArrayElementAtIndex(index);
+            entry.FindPropertyRelative("enemy").objectReferenceValue = enemy;
+            entry.FindPropertyRelative("startTime").floatValue = startTime;
+            entry.FindPropertyRelative("endTime").floatValue = endTime;
+            entry.FindPropertyRelative("spawnInterval").floatValue = spawnInterval;
+            entry.FindPropertyRelative("countPerSpawn").intValue = countPerSpawn;
         }
 
         private static ChapterDefinition CreateChapterDefinition(WaveData waveData)
