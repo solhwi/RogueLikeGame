@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: 2f38ba0c783d36e49b5fb701207c15c0
+timeCreated: 1516693148
+licenseType: Store
+ShaderImporter:
+  defaultTextures: []
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 84992
+  packageName: Haon SD series Bundle
+  packageVersion: 3.1
+  assetPath: Assets/SD Unity-Chan Haon Custom/Shader/Unity-chan Toon Shader Ver 2.0.6/UCTS_Outline2.cginc
+  uploadId: 418201

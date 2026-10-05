@@ -9,6 +9,7 @@ using UnityEngine.UI;
 using RogueLike.Core;
 using RogueLike.Player;
 using RogueLike.Combat;
+using RogueLike.Items;
 using RogueLike.Level;
 using RogueLike.Enemies;
 using RogueLike.Managers;
@@ -18,10 +19,10 @@ using RogueLike.UI;
 namespace RogueLike.EditorTools
 {
     /// <summary>
-    /// Builds a minimal playable slice of the roguelike conversion: one
-    /// active skill, two passives, one enemy type, one wave, one chapter,
-    /// wired into a scene so the core loop (move -> auto-attack -> gain XP
-    /// -> level up) can be tried immediately.
+    /// Builds a minimal playable slice of the roguelike conversion: a
+    /// starting item, two level-up item choices, one enemy type, one wave,
+    /// one chapter, wired into a scene so the core loop (move -> auto-attack
+    /// -> gain XP -> level up -> pick an item) can be tried immediately.
     /// </summary>
     public static class RoguelikeSceneBuilder
     {
@@ -62,23 +63,96 @@ namespace RogueLike.EditorTools
 
             var playerSprite = CreateAndSaveSquareSprite("RoguelikePlayerSprite", new Color(0.20f, 0.55f, 0.95f));
             var enemySprite = CreateAndSaveSquareSprite("RoguelikeEnemySprite", new Color(0.55f, 0.85f, 0.25f));
+            var runnerSprite = CreateAndSaveSquareSprite("RoguelikeRunnerSprite", new Color(0.95f, 0.75f, 0.15f));
+            var bruteSprite = CreateAndSaveSquareSprite("RoguelikeBruteSprite", new Color(0.55f, 0.25f, 0.15f));
+            var bossSprite = CreateAndSaveSquareSprite("RoguelikeBossSprite", new Color(0.35f, 0.1f, 0.45f));
             var projectileSprite = CreateAndSaveSquareSprite("RoguelikeProjectileSprite", new Color(0.95f, 0.85f, 0.20f));
             var gemSprite = CreateAndSaveSquareSprite("RoguelikeGemSprite", new Color(0.35f, 0.90f, 0.95f));
+            var bladeSprite = CreateAndSaveSquareSprite("RoguelikeBladeSprite", new Color(0.9f, 0.3f, 0.5f));
 
             var projectilePrefab = CreateProjectilePrefab(projectileSprite);
-            var enemyPrefab = CreateEnemyPrefab(enemySprite, enemyLayer);
+            var enemyPrefab = CreateEnemyPrefab(enemySprite, enemyLayer, "RoguelikeEnemy_Zombie", 0.8f);
+            var runnerPrefab = CreateEnemyPrefab(runnerSprite, enemyLayer, "RoguelikeEnemy_Runner", 0.6f);
+            var brutePrefab = CreateEnemyPrefab(bruteSprite, enemyLayer, "RoguelikeEnemy_Brute", 1.2f);
+            var bossPrefab = CreateEnemyPrefab(bossSprite, enemyLayer, "RoguelikeEnemy_Boss", 1.8f);
             var gemPrefab = CreateGemPrefab(gemSprite, lootLayer);
+            var bladePrefab = CreateOrbitingBladePrefab(bladeSprite, "RoguelikeOrbitingBlade");
 
-            var basicShotIcon = CreateAndSaveSquareSprite("SkillIcon_BasicShot", new Color(0.95f, 0.65f, 0.20f));
-            var moveSpeedIcon = CreateAndSaveSquareSprite("SkillIcon_MoveSpeedUp", new Color(0.45f, 0.90f, 0.45f));
-            var magnetIcon = CreateAndSaveSquareSprite("SkillIcon_MagnetUp", new Color(0.75f, 0.45f, 0.95f));
+            var basicShotIcon = CreateAndSaveSquareSprite("ItemIcon_BasicShot", new Color(0.95f, 0.65f, 0.20f));
+            var moveSpeedIcon = CreateAndSaveSquareSprite("ItemIcon_MoveSpeedUp", new Color(0.45f, 0.90f, 0.45f));
+            var magnetIcon = CreateAndSaveSquareSprite("ItemIcon_MagnetUp", new Color(0.75f, 0.45f, 0.95f));
+            var throwingKnifeIcon = CreateAndSaveSquareSprite("ItemIcon_ThrowingKnife", new Color(0.85f, 0.85f, 0.90f));
+            var orbitingBladeIcon = CreateAndSaveSquareSprite("ItemIcon_OrbitingBlade", new Color(0.9f, 0.3f, 0.5f));
 
-            var activeSkill = CreateBasicShotSkill(projectilePrefab, basicShotIcon, "전방으로 투사체를 발사한다.");
-            var moveSpeedSkill = CreatePassiveSkill("MoveSpeedUp", "Swift Boots", StatType.MoveSpeedMultiplier, 0.05f, moveSpeedIcon, "이동 속도가 증가한다.");
-            var magnetSkill = CreatePassiveSkill("MagnetUp", "Loot Magnet", StatType.PickupRange, 0.5f, magnetIcon, "아이템 획득 범위가 증가한다.");
+            // Everything the player can end up with is an item: some start
+            // owned, some are offered on level-up — see RunManager's
+            // availableItemPool below.
+            var basicShotItem = CreateProjectileItem(projectilePrefab, basicShotIcon, "basic_shot", "Basic Shot", "가장 가까운 적에게 투사체를 자동으로 발사한다.");
+            var moveSpeedItem = CreateStatBonusItem(moveSpeedIcon, "move_speed_up", "Swift Boots", StatType.MoveSpeedMultiplier, 0.15f, "이동 속도가 증가한다.");
+            var magnetItem = CreateStatBonusItem(magnetIcon, "magnet_up", "Loot Magnet", StatType.PickupRange, 1.5f, "아이템 획득 범위가 증가한다.");
+            var throwingKnifeItem = CreateProjectileItem(projectilePrefab, throwingKnifeIcon, "throwing_knife", "Throwing Knife", "가장 가까운 적에게 칼을 자동으로 던진다.");
+            var orbitingBladeItem = CreateOrbitingBladeItem(bladePrefab, orbitingBladeIcon, "orbiting_blade", "Orbiting Blade", "캐릭터 주위를 회전하며 닿는 적에게 피해를 준다.");
 
-            var zombieDefinition = CreateZombieDefinition(enemyPrefab, gemPrefab);
-            var waveData = CreateWaveData(zombieDefinition);
+            // --- Named batch: 까마귀/곰돌이/오사카/비둘기/빨간차/멘헤라 ---
+            // Crow/Pigeon reuse the shared projectile prefab (like Basic
+            // Shot/Throwing Knife above); Red Car/Menhera each need their
+            // own orbiting-blade prefab so their sprites don't collide.
+            var crowIcon = CreateAndSaveSquareSprite("ItemIcon_Crow", new Color(0.12f, 0.12f, 0.14f));
+            var pigeonIcon = CreateAndSaveSquareSprite("ItemIcon_Pigeon", new Color(0.75f, 0.75f, 0.8f));
+            var redCarIcon = CreateAndSaveSquareSprite("ItemIcon_RedCar", new Color(0.85f, 0.1f, 0.1f));
+            var menheraIcon = CreateAndSaveSquareSprite("ItemIcon_Menhera", new Color(0.55f, 0.15f, 0.55f));
+            var teddyBearIcon = CreateAndSaveSquareSprite("ItemIcon_TeddyBear", new Color(0.55f, 0.35f, 0.2f));
+            var osakaIcon = CreateAndSaveSquareSprite("ItemIcon_Osaka", new Color(0.9f, 0.6f, 0.3f));
+
+            var redCarSprite = CreateAndSaveSquareSprite("RoguelikeRedCarSprite", new Color(0.85f, 0.1f, 0.1f));
+            var menheraSprite = CreateAndSaveSquareSprite("RoguelikeMenheraSprite", new Color(0.55f, 0.15f, 0.55f));
+            var redCarPrefab = CreateOrbitingBladePrefab(redCarSprite, "RoguelikeRedCarBlade");
+            var menheraPrefab = CreateOrbitingBladePrefab(menheraSprite, "RoguelikeMenheraBlade");
+
+            var crowItem = CreateProjectileItem(projectilePrefab, crowIcon, "crow", "까마귀", "가장 가까운 적에게 급강하하여 부리로 쫀다.");
+            var pigeonItem = CreateProjectileItem(projectilePrefab, pigeonIcon, "pigeon", "비둘기", "가장 가까운 적에게 잇달아 날아가 부딪힌다.");
+            var redCarItem = CreateOrbitingBladeItem(redCarPrefab, redCarIcon, "red_car", "빨간차", "캐릭터 주위를 질주하며 부딪히는 모든 적을 들이받는다.");
+            var menheraItem = CreateOrbitingBladeItem(menheraPrefab, menheraIcon, "menhera", "멘헤라", "캐릭터에게 바짝 붙어 빠르게 맴돌며 닿는 적에게 피해를 준다.");
+            var teddyBearItem = CreateStatBonusItem(teddyBearIcon, "teddy_bear", "곰돌이", StatType.PickupRange, 2f, "포근한 곰인형이 주변의 아이템을 끌어당긴다.");
+            var osakaItem = CreateStatBonusItem(osakaIcon, "osaka", "오사카", StatType.CooldownReduction, 0.1f, "엉뚱하지만 가끔 번뜩이는 재치로 스킬 재사용 대기시간이 줄어든다.");
+
+            // Tune the two orbiting items apart from the base Orbiting
+            // Blade item (and each other) so they don't just play identically.
+            ApplyOrbitingBladeStats(redCarItem, orbitRadius: 2.5f, orbitDegreesPerSecond: 260f, damage: 4);
+            ApplyOrbitingBladeStats(menheraItem, orbitRadius: 1f, orbitDegreesPerSecond: 420f, damage: 3);
+            ApplyProjectileStats(crowItem, range: 6f, cooldown: 1f, damage: 4, projectileCount: 1, pierceCount: 1, projectileSpeed: 12f);
+            ApplyProjectileStats(pigeonItem, range: 5f, cooldown: 0.8f, damage: 2, projectileCount: 2, pierceCount: 0, projectileSpeed: 8f);
+
+            var itemDatabase = CreateAsset<ItemDatabase>($"{DataFolder}/Items", "ItemDatabase");
+            var itemDatabaseSO = new SerializedObject(itemDatabase);
+            var databaseItemsProp = itemDatabaseSO.FindProperty("items");
+            var allItems = new ItemDefinition[]
+            {
+                basicShotItem, moveSpeedItem, magnetItem, throwingKnifeItem, orbitingBladeItem,
+                crowItem, pigeonItem, redCarItem, menheraItem, teddyBearItem, osakaItem,
+            };
+            AssignArray(databaseItemsProp, allItems);
+            itemDatabaseSO.ApplyModifiedProperties();
+
+            // Asset rather than a scene component, so it's referenced the
+            // same way from the player's loadout, the UI and RunManager
+            // (which calls ResetRun() on it) — see ItemInventory's own
+            // comment for why.
+            var itemInventory = CreateAsset<ItemInventory>($"{DataFolder}/Items", "PlayerItemInventory");
+            var itemInventorySO = new SerializedObject(itemInventory);
+            itemInventorySO.FindProperty("database").objectReferenceValue = itemDatabase;
+            var startingItemsProp = itemInventorySO.FindProperty("startingItems");
+            AssignArray(startingItemsProp, new ItemDefinition[]
+            {
+                throwingKnifeItem, crowItem, pigeonItem, redCarItem, menheraItem, teddyBearItem, osakaItem,
+            });
+            itemInventorySO.ApplyModifiedProperties();
+
+            var zombieDefinition = CreateEnemyDefinition("BasicZombie", "basic_zombie", enemyPrefab, maxHealth: 5, moveSpeed: 1.5f, contactDamage: 1, tier: EnemyTier.Normal, gemPrefab: gemPrefab, experienceReward: 1, goldReward: 1);
+            var runnerDefinition = CreateEnemyDefinition("Runner", "runner", runnerPrefab, maxHealth: 2, moveSpeed: 3.2f, contactDamage: 1, tier: EnemyTier.Normal, gemPrefab: gemPrefab, experienceReward: 1, goldReward: 1);
+            var bruteDefinition = CreateEnemyDefinition("Brute", "brute", brutePrefab, maxHealth: 18, moveSpeed: 0.9f, contactDamage: 2, tier: EnemyTier.Elite, gemPrefab: gemPrefab, experienceReward: 3, goldReward: 3);
+            var bossDefinition = CreateEnemyDefinition("Boss", "boss", bossPrefab, maxHealth: 120, moveSpeed: 1.1f, contactDamage: 3, tier: EnemyTier.Boss, gemPrefab: gemPrefab, experienceReward: 20, goldReward: 25);
+            var waveData = CreateWaveData(zombieDefinition, runnerDefinition, bruteDefinition, bossDefinition);
             CreateChapterDefinition(waveData);
 
             var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
@@ -104,14 +178,19 @@ namespace RogueLike.EditorTools
 
             playerGo.AddComponent<PlayerInputHandler>();
             playerGo.AddComponent<PlayerController>();
-            var skillLoadout = playerGo.AddComponent<PlayerSkillLoadout>();
             playerGo.AddComponent<LootMagnet>();
-
-            var activeRunner = playerGo.AddComponent<ActiveSkillRunner>();
-            new SerializedObject(activeRunner).ApplyEnemyLayer(enemyLayer);
 
             var lootMagnet = playerGo.GetComponent<LootMagnet>();
             new SerializedObject(lootMagnet).ApplyLootLayer(lootLayer);
+
+            // --- Item-skill loadout (item = skill; see Items/*) ---
+            // Drives every equipped item's own behavior, and is also where
+            // PlayerController/LootMagnet read passive stat bonuses from —
+            // there's no separate skill system any more. ItemInventory is a
+            // ScriptableObject asset (created above, outside the scene)
+            // rather than a player component.
+            var itemLoadout = playerGo.AddComponent<ItemSkillLoadout>();
+            new SerializedObject(itemLoadout).ApplyEnemyLayer(enemyLayer);
 
             // --- Run manager (waves + bounds) ---
             var runManagerGo = new GameObject("RunManager");
@@ -144,13 +223,11 @@ namespace RogueLike.EditorTools
             runManagerSO.FindProperty("playerHealth").objectReferenceValue = playerHealth;
             runManagerSO.FindProperty("waveSpawner").objectReferenceValue = waveSpawner;
             runManagerSO.FindProperty("bounds").objectReferenceValue = chapterBounds;
-            runManagerSO.FindProperty("skillLoadout").objectReferenceValue = skillLoadout;
-            var skillPoolProp = runManagerSO.FindProperty("availableSkillPool");
-            skillPoolProp.arraySize = 3;
-            skillPoolProp.GetArrayElementAtIndex(0).objectReferenceValue = activeSkill;
-            skillPoolProp.GetArrayElementAtIndex(1).objectReferenceValue = moveSpeedSkill;
-            skillPoolProp.GetArrayElementAtIndex(2).objectReferenceValue = magnetSkill;
-            runManagerSO.FindProperty("skillChoiceCount").intValue = 3;
+            runManagerSO.FindProperty("itemInventory").objectReferenceValue = itemInventory;
+            runManagerSO.FindProperty("itemLoadout").objectReferenceValue = itemLoadout;
+            var itemPoolProp = runManagerSO.FindProperty("availableItemPool");
+            AssignArray(itemPoolProp, new ItemDefinition[] { basicShotItem, moveSpeedItem, magnetItem, orbitingBladeItem });
+            runManagerSO.FindProperty("itemChoiceCount").intValue = 3;
             runManagerSO.ApplyModifiedProperties();
 
             // --- Camera ---
@@ -176,6 +253,7 @@ namespace RogueLike.EditorTools
             new GameObject("AudioManager").AddComponent<AudioManager>();
             new GameObject("ExperienceManager").AddComponent<ExperienceManager>();
             new GameObject("KillCounter").AddComponent<KillCounter>();
+            new GameObject("MetaProgressionManager").AddComponent<MetaProgressionManager>();
 
             // --- UI ---
             var canvasGo = new GameObject("Canvas");
@@ -218,7 +296,7 @@ namespace RogueLike.EditorTools
             new SerializedObject(elapsedTimeDisplay).ApplyTimeText(timerText);
 
             var currencyIconSprite = CreateAndSaveSquareSprite("RoguelikeCurrencyIconSprite", new Color(0.95f, 0.8f, 0.25f));
-            CreateIconCounter(canvasGo.transform, "CurrencyCount", currencyIconSprite, new Vector2(-24f, -28f), "0");
+            var currencyText = CreateIconCounter(canvasGo.transform, "CurrencyCount", currencyIconSprite, new Vector2(-24f, -28f), "0");
 
             var killIconSprite = CreateAndSaveSquareSprite("RoguelikeKillIconSprite", new Color(0.85f, 0.25f, 0.25f));
             var killCountText = CreateIconCounter(canvasGo.transform, "KillCount", killIconSprite, new Vector2(-24f, -100f), "0");
@@ -229,8 +307,24 @@ namespace RogueLike.EditorTools
             var healthDotSprite = CreateAndSavePixelSprite(ArtFolder, "RoguelikeHealthDotSprite", HealthDotPixels, HealthDotPixel);
             var healthDots = CreateHealthDots(canvasGo.transform, healthDotSprite, new Vector2(40f, -280f), MaxHealthDots);
 
-            // --- Skill slots: bottom-center, arranged by a HorizontalLayoutGroup ---
-            var (skillIcons, skillLevels) = CreateSkillIconRow(canvasGo.transform, "Skill", new Vector2(0f, 150f), MaxSkillIconSlots);
+            // --- Item-skill slots + inventory panel (item = skill) ---
+            var (itemPanel, itemListParent) = CreateItemInventoryPanel(canvasGo.transform);
+            itemPanel.SetActive(false);
+
+            var itemEntryPrefab = CreateItemEntryPrefab(throwingKnifeIcon).GetComponent<ItemInventoryEntryUI>();
+
+            var itemInventoryUI = canvasGo.AddComponent<ItemInventoryUI>();
+            var itemInventoryUISO = new SerializedObject(itemInventoryUI);
+            itemInventoryUISO.FindProperty("inventory").objectReferenceValue = itemInventory;
+            itemInventoryUISO.FindProperty("loadout").objectReferenceValue = itemLoadout;
+            itemInventoryUISO.FindProperty("panel").objectReferenceValue = itemPanel;
+            itemInventoryUISO.FindProperty("listParent").objectReferenceValue = itemListParent;
+            itemInventoryUISO.FindProperty("entryPrefab").objectReferenceValue = itemEntryPrefab;
+            itemInventoryUISO.ApplyModifiedProperties();
+
+            itemPanel.transform.Find("CloseButton").GetComponent<Button>().onClick.AddListener(itemInventoryUI.Close);
+
+            CreateItemSkillSlotRow(canvasGo.transform, new Vector2(0f, 150f), ItemSlotVisualCount, itemLoadout, itemInventoryUI);
 
             var levelUpPanel = CreatePanel(canvasGo.transform, "LevelUpPanel", "LEVEL UP!");
             levelUpPanel.SetActive(false);
@@ -259,6 +353,7 @@ namespace RogueLike.EditorTools
             AssignArray(chapterHudSO.FindProperty("experienceSegments"), experienceSegments);
             chapterHudSO.FindProperty("levelText").objectReferenceValue = levelTextComponent;
             chapterHudSO.FindProperty("killCountText").objectReferenceValue = killCountText;
+            chapterHudSO.FindProperty("currencyText").objectReferenceValue = currencyText;
             chapterHudSO.ApplyModifiedProperties();
 
             pauseButton.gameObject.AddComponent<PauseButton>();
@@ -277,13 +372,6 @@ namespace RogueLike.EditorTools
                 choiceLabelsProp.GetArrayElementAtIndex(i).objectReferenceValue = choiceLabels[i];
             }
             levelUpUISO.ApplyModifiedProperties();
-
-            var skillLoadoutUI = canvasGo.AddComponent<SkillLoadoutUI>();
-            var skillLoadoutUISO = new SerializedObject(skillLoadoutUI);
-            skillLoadoutUISO.FindProperty("loadout").objectReferenceValue = skillLoadout;
-            AssignArray(skillLoadoutUISO.FindProperty("skillIcons"), skillIcons);
-            AssignArray(skillLoadoutUISO.FindProperty("skillLevels"), skillLevels);
-            skillLoadoutUISO.ApplyModifiedProperties();
 
             if (!AssetDatabase.IsValidFolder("Assets/Scenes"))
             {
@@ -316,11 +404,42 @@ namespace RogueLike.EditorTools
             return SaveAsPrefabAndDestroy(go, $"{PrefabFolder}/RoguelikeProjectile.prefab");
         }
 
-        private static GameObject CreateEnemyPrefab(Sprite sprite, int enemyLayer)
+        // Takes an explicit prefabName (rather than a fixed one like the
+        // other CreatexxxPrefab helpers) because multiple orbiting items
+        // each need their own prefab asset — reusing one path across calls
+        // would just overwrite the previous item's prefab with the new
+        // sprite baked in.
+        private static GameObject CreateOrbitingBladePrefab(Sprite sprite, string prefabName)
         {
-            var go = new GameObject("RoguelikeEnemy_Zombie");
+            var go = new GameObject(prefabName);
+            go.transform.localScale = new Vector3(0.35f, 0.35f, 1f);
+
+            var sr = go.AddComponent<SpriteRenderer>();
+            sr.sprite = sprite;
+            sr.sharedMaterial = GetSpriteMaterial();
+            sr.sortingOrder = 6;
+
+            var col = go.AddComponent<CircleCollider2D>();
+            col.isTrigger = true;
+            col.radius = 0.5f;
+
+            // Damage reuses Hazard (the same "damage IDamageable on
+            // contact" component enemy hitboxes use) — see
+            // OrbitingBladeItemDefinition for why.
+            go.AddComponent<Hazard>();
+
+            return SaveAsPrefabAndDestroy(go, $"{PrefabFolder}/{prefabName}.prefab");
+        }
+
+        // prefabName/scale are parameters (rather than the old hardcoded
+        // "zombie at 0.8") so multiple enemy types can each get their own
+        // prefab asset and silhouette size instead of colliding on one path
+        // like the orbiting-blade items did before that was fixed.
+        private static GameObject CreateEnemyPrefab(Sprite sprite, int enemyLayer, string prefabName, float scale)
+        {
+            var go = new GameObject(prefabName);
             go.layer = enemyLayer;
-            go.transform.localScale = new Vector3(0.8f, 0.8f, 1f);
+            go.transform.localScale = new Vector3(scale, scale, 1f);
 
             var sr = go.AddComponent<SpriteRenderer>();
             sr.sprite = sprite;
@@ -335,7 +454,7 @@ namespace RogueLike.EditorTools
             go.AddComponent<Hazard>();
             go.AddComponent<EnemyChaseAI>();
 
-            return SaveAsPrefabAndDestroy(go, $"{PrefabFolder}/RoguelikeEnemy_Zombie.prefab");
+            return SaveAsPrefabAndDestroy(go, $"{PrefabFolder}/{prefabName}.prefab");
         }
 
         private static GameObject CreateGemPrefab(Sprite sprite, int lootLayer)
@@ -369,92 +488,126 @@ namespace RogueLike.EditorTools
             return prefab;
         }
 
-        private static ActiveSkillDefinition CreateBasicShotSkill(GameObject projectilePrefab, Sprite icon, string description)
+        private static StatBonusItemDefinition CreateStatBonusItem(Sprite icon, string itemKey, string displayName, StatType statType, float bonusValue, string description)
         {
-            var skill = CreateAsset<ActiveSkillDefinition>($"{DataFolder}/Skills", "BasicShot");
-            var so = new SerializedObject(skill);
-            so.FindProperty("skillId").stringValue = "basic_shot";
-            so.FindProperty("displayName").stringValue = "Basic Shot";
-            so.FindProperty("icon").objectReferenceValue = icon;
-            so.FindProperty("description").stringValue = description;
-            so.FindProperty("maxLevel").intValue = 5;
-            so.FindProperty("projectilePrefab").objectReferenceValue = projectilePrefab;
-            so.FindProperty("range").floatValue = 8f;
-
-            int[] damages = { 3, 4, 5, 6, 8 };
-            float[] cooldowns = { 0.8f, 0.75f, 0.7f, 0.6f, 0.5f };
-            int[] counts = { 1, 1, 1, 2, 2 };
-            int[] pierces = { 0, 0, 1, 1, 2 };
-
-            var levelStatsProp = so.FindProperty("levelStats");
-            levelStatsProp.arraySize = 5;
-            for (int i = 0; i < 5; i++)
-            {
-                var element = levelStatsProp.GetArrayElementAtIndex(i);
-                element.FindPropertyRelative("damage").intValue = damages[i];
-                element.FindPropertyRelative("cooldown").floatValue = cooldowns[i];
-                element.FindPropertyRelative("projectileCount").intValue = counts[i];
-                element.FindPropertyRelative("pierceCount").intValue = pierces[i];
-                element.FindPropertyRelative("projectileSpeed").floatValue = 10f;
-            }
-
-            so.ApplyModifiedProperties();
-            return skill;
-        }
-
-        private static PassiveSkillDefinition CreatePassiveSkill(string assetName, string displayName, StatType statType, float valuePerLevel, Sprite icon, string description)
-        {
-            var skill = CreateAsset<PassiveSkillDefinition>($"{DataFolder}/Skills", assetName);
-            var so = new SerializedObject(skill);
-            so.FindProperty("skillId").stringValue = assetName;
+            var item = CreateAsset<StatBonusItemDefinition>($"{DataFolder}/Items", displayName.Replace(" ", string.Empty));
+            var so = new SerializedObject(item);
+            so.FindProperty("itemKey").stringValue = itemKey;
             so.FindProperty("displayName").stringValue = displayName;
             so.FindProperty("icon").objectReferenceValue = icon;
             so.FindProperty("description").stringValue = description;
-            so.FindProperty("maxLevel").intValue = 5;
-
-            var bonusesProp = so.FindProperty("statBonuses");
-            bonusesProp.arraySize = 1;
-            var bonus = bonusesProp.GetArrayElementAtIndex(0);
-            bonus.FindPropertyRelative("statType").enumValueIndex = (int)statType;
-            bonus.FindPropertyRelative("valuePerLevel").floatValue = valuePerLevel;
-
+            so.FindProperty("statType").enumValueIndex = (int)statType;
+            so.FindProperty("bonusValue").floatValue = bonusValue;
             so.ApplyModifiedProperties();
-            return skill;
+            return item;
         }
 
-        private static EnemyDefinition CreateZombieDefinition(GameObject enemyPrefab, GameObject gemPrefab)
+        private static ProjectileItemDefinition CreateProjectileItem(GameObject projectilePrefab, Sprite icon, string itemKey, string displayName, string description)
         {
-            var definition = CreateAsset<EnemyDefinition>($"{DataFolder}/Enemies", "BasicZombie");
+            var item = CreateAsset<ProjectileItemDefinition>($"{DataFolder}/Items", displayName.Replace(" ", string.Empty));
+            var so = new SerializedObject(item);
+            so.FindProperty("itemKey").stringValue = itemKey;
+            so.FindProperty("displayName").stringValue = displayName;
+            so.FindProperty("icon").objectReferenceValue = icon;
+            so.FindProperty("description").stringValue = description;
+            so.FindProperty("projectilePrefab").objectReferenceValue = projectilePrefab;
+            so.FindProperty("range").floatValue = 6f;
+            so.FindProperty("cooldown").floatValue = 1.2f;
+            so.FindProperty("damage").intValue = 3;
+            so.FindProperty("projectileCount").intValue = 1;
+            so.FindProperty("pierceCount").intValue = 0;
+            so.FindProperty("projectileSpeed").floatValue = 9f;
+            so.ApplyModifiedProperties();
+            return item;
+        }
+
+        private static OrbitingBladeItemDefinition CreateOrbitingBladeItem(GameObject bladePrefab, Sprite icon, string itemKey, string displayName, string description)
+        {
+            var item = CreateAsset<OrbitingBladeItemDefinition>($"{DataFolder}/Items", displayName.Replace(" ", string.Empty));
+            var so = new SerializedObject(item);
+            so.FindProperty("itemKey").stringValue = itemKey;
+            so.FindProperty("displayName").stringValue = displayName;
+            so.FindProperty("icon").objectReferenceValue = icon;
+            so.FindProperty("description").stringValue = description;
+            so.FindProperty("bladePrefab").objectReferenceValue = bladePrefab;
+            so.FindProperty("orbitRadius").floatValue = 2f;
+            so.FindProperty("orbitDegreesPerSecond").floatValue = 180f;
+            so.FindProperty("damage").intValue = 2;
+            so.ApplyModifiedProperties();
+            return item;
+        }
+
+        // Overrides for a specific orbiting/projectile item after it's been
+        // created with CreateOrbitingBladeItem/CreateProjectileItem's
+        // defaults, so callers only have to name the stats they actually
+        // want to differ instead of repeating every field.
+        private static void ApplyOrbitingBladeStats(OrbitingBladeItemDefinition item, float orbitRadius, float orbitDegreesPerSecond, int damage)
+        {
+            var so = new SerializedObject(item);
+            so.FindProperty("orbitRadius").floatValue = orbitRadius;
+            so.FindProperty("orbitDegreesPerSecond").floatValue = orbitDegreesPerSecond;
+            so.FindProperty("damage").intValue = damage;
+            so.ApplyModifiedProperties();
+        }
+
+        private static void ApplyProjectileStats(ProjectileItemDefinition item, float range, float cooldown, int damage, int projectileCount, int pierceCount, float projectileSpeed)
+        {
+            var so = new SerializedObject(item);
+            so.FindProperty("range").floatValue = range;
+            so.FindProperty("cooldown").floatValue = cooldown;
+            so.FindProperty("damage").intValue = damage;
+            so.FindProperty("projectileCount").intValue = projectileCount;
+            so.FindProperty("pierceCount").intValue = pierceCount;
+            so.FindProperty("projectileSpeed").floatValue = projectileSpeed;
+            so.ApplyModifiedProperties();
+        }
+
+        private static EnemyDefinition CreateEnemyDefinition(string assetName, string enemyId, GameObject enemyPrefab, int maxHealth, float moveSpeed, int contactDamage, EnemyTier tier, GameObject gemPrefab, int experienceReward, int goldReward)
+        {
+            var definition = CreateAsset<EnemyDefinition>($"{DataFolder}/Enemies", assetName);
             var so = new SerializedObject(definition);
-            so.FindProperty("enemyId").stringValue = "basic_zombie";
+            so.FindProperty("enemyId").stringValue = enemyId;
             so.FindProperty("prefab").objectReferenceValue = enemyPrefab;
-            so.FindProperty("maxHealth").intValue = 5;
-            so.FindProperty("moveSpeed").floatValue = 1.5f;
-            so.FindProperty("contactDamage").intValue = 1;
-            so.FindProperty("tier").enumValueIndex = (int)EnemyTier.Normal;
+            so.FindProperty("maxHealth").intValue = maxHealth;
+            so.FindProperty("moveSpeed").floatValue = moveSpeed;
+            so.FindProperty("contactDamage").intValue = contactDamage;
+            so.FindProperty("tier").enumValueIndex = (int)tier;
             so.FindProperty("experienceGemPrefab").objectReferenceValue = gemPrefab;
-            so.FindProperty("experienceReward").intValue = 1;
+            so.FindProperty("experienceReward").intValue = experienceReward;
+            so.FindProperty("goldReward").intValue = goldReward;
             so.ApplyModifiedProperties();
             return definition;
         }
 
-        private static WaveData CreateWaveData(EnemyDefinition zombieDefinition)
+        // Staggered timeline: zombies from the start, runners join at 30s,
+        // brutes at 90s, and a one-off boss at 180s — enough variety that a
+        // few minutes of play actually feels different over time instead of
+        // the single always-on zombie trickle this used to be.
+        private static WaveData CreateWaveData(EnemyDefinition zombieDefinition, EnemyDefinition runnerDefinition, EnemyDefinition bruteDefinition, EnemyDefinition bossDefinition)
         {
             var waveData = CreateAsset<WaveData>($"{DataFolder}/Waves", "TestChapterWaves");
             var so = new SerializedObject(waveData);
 
             var entriesProp = so.FindProperty("entries");
-            entriesProp.arraySize = 1;
-            var entry = entriesProp.GetArrayElementAtIndex(0);
-            entry.FindPropertyRelative("enemy").objectReferenceValue = zombieDefinition;
-            entry.FindPropertyRelative("startTime").floatValue = 0f;
-            entry.FindPropertyRelative("endTime").floatValue = 99999f;
-            entry.FindPropertyRelative("spawnInterval").floatValue = 1.5f;
-            entry.FindPropertyRelative("countPerSpawn").intValue = 1;
+            entriesProp.arraySize = 3;
+            SetWaveEntry(entriesProp, 0, zombieDefinition, startTime: 0f, endTime: 99999f, spawnInterval: 1.5f, countPerSpawn: 1);
+            SetWaveEntry(entriesProp, 1, runnerDefinition, startTime: 30f, endTime: 99999f, spawnInterval: 2.5f, countPerSpawn: 1);
+            SetWaveEntry(entriesProp, 2, bruteDefinition, startTime: 90f, endTime: 99999f, spawnInterval: 6f, countPerSpawn: 1);
 
-            so.FindProperty("bossSpawnTime").floatValue = 99999f;
+            so.FindProperty("bossEnemy").objectReferenceValue = bossDefinition;
+            so.FindProperty("bossSpawnTime").floatValue = 180f;
             so.ApplyModifiedProperties();
             return waveData;
+        }
+
+        private static void SetWaveEntry(SerializedProperty entriesProp, int index, EnemyDefinition enemy, float startTime, float endTime, float spawnInterval, int countPerSpawn)
+        {
+            var entry = entriesProp.GetArrayElementAtIndex(index);
+            entry.FindPropertyRelative("enemy").objectReferenceValue = enemy;
+            entry.FindPropertyRelative("startTime").floatValue = startTime;
+            entry.FindPropertyRelative("endTime").floatValue = endTime;
+            entry.FindPropertyRelative("spawnInterval").floatValue = spawnInterval;
+            entry.FindPropertyRelative("countPerSpawn").intValue = countPerSpawn;
         }
 
         private static ChapterDefinition CreateChapterDefinition(WaveData waveData)
@@ -541,70 +694,238 @@ namespace RogueLike.EditorTools
             }
         }
 
-        // --- Skill loadout icons ----------------------------------------------
-        private const int MaxSkillIconSlots = 6;
-        private const float SkillIconSize = 130f;
-        private const float SkillIconSpacing = 146f;
+        // --- Item-skill slots + inventory panel ---------------------------------
+        private const int ItemSlotVisualCount = 6;
+        private const float ItemSlotIconSize = 130f;
+        private const float ItemSlotSpacing = 146f;
+        private const float ItemSlotHeight = ItemSlotIconSize + 36f;
 
-        // Each slot is a dark background square with an Icon image (starts
-        // hidden; SkillLoadoutUI enables/assigns it once a skill occupies
-        // that slot) and a small level number in the bottom-right corner.
-        // The row itself is bottom-center anchored and arranged by a
-        // HorizontalLayoutGroup rather than manually-positioned slots.
-        private static (Image[] icons, Text[] levels) CreateSkillIconRow(Transform parent, string namePrefix, Vector2 anchoredPosition, int count)
+        // Row of compact item-skill slots (icon + name only — the full skill
+        // description is shown in the inventory panel entries below, where
+        // there's room for it). Each slot wires itself up: tapping it opens
+        // the shared ItemInventoryUI targeted at that slot index.
+        private static void CreateItemSkillSlotRow(Transform parent, Vector2 anchoredPosition, int count, ItemSkillLoadout loadout, ItemInventoryUI inventoryUI)
         {
-            var containerGo = new GameObject($"{namePrefix}Row", typeof(RectTransform));
+            var containerGo = new GameObject("ItemSlotRow", typeof(RectTransform));
             containerGo.transform.SetParent(parent, false);
             var containerRt = containerGo.GetComponent<RectTransform>();
             containerRt.anchorMin = new Vector2(0.5f, 0f);
             containerRt.anchorMax = new Vector2(0.5f, 0f);
             containerRt.pivot = new Vector2(0.5f, 0f);
             containerRt.anchoredPosition = anchoredPosition;
-            containerRt.sizeDelta = new Vector2(count * SkillIconSpacing, SkillIconSize);
+            containerRt.sizeDelta = new Vector2(count * ItemSlotSpacing, ItemSlotHeight);
 
             var layoutGroup = containerGo.AddComponent<HorizontalLayoutGroup>();
-            layoutGroup.spacing = SkillIconSpacing - SkillIconSize;
+            layoutGroup.spacing = ItemSlotSpacing - ItemSlotIconSize;
             layoutGroup.childAlignment = TextAnchor.MiddleCenter;
             layoutGroup.childControlWidth = false;
             layoutGroup.childControlHeight = false;
             layoutGroup.childForceExpandWidth = false;
             layoutGroup.childForceExpandHeight = false;
 
-            var icons = new Image[count];
-            var levels = new Text[count];
-
             for (int i = 0; i < count; i++)
             {
-                var slotGo = new GameObject($"{namePrefix}Slot_{i}", typeof(RectTransform));
+                var slotGo = new GameObject($"ItemSlot_{i}", typeof(RectTransform));
                 slotGo.transform.SetParent(containerGo.transform, false);
-                slotGo.GetComponent<RectTransform>().sizeDelta = new Vector2(SkillIconSize, SkillIconSize);
+                slotGo.GetComponent<RectTransform>().sizeDelta = new Vector2(ItemSlotIconSize, ItemSlotHeight);
 
                 var bgImg = slotGo.AddComponent<Image>();
-                bgImg.color = new Color(0f, 0f, 0f, 0.4f);
+                bgImg.color = new Color(0.2f, 0.14f, 0.05f, 0.5f);
+                var button = slotGo.AddComponent<Button>();
+                button.targetGraphic = bgImg;
 
                 var iconGo = new GameObject("Icon", typeof(RectTransform));
                 iconGo.transform.SetParent(slotGo.transform, false);
-                SetStretch(iconGo.GetComponent<RectTransform>());
+                var iconRt = iconGo.GetComponent<RectTransform>();
+                iconRt.anchorMin = new Vector2(0f, 1f);
+                iconRt.anchorMax = new Vector2(1f, 1f);
+                iconRt.pivot = new Vector2(0.5f, 1f);
+                iconRt.anchoredPosition = Vector2.zero;
+                iconRt.sizeDelta = new Vector2(0f, ItemSlotIconSize);
                 var iconImg = iconGo.AddComponent<Image>();
                 iconGo.SetActive(false);
 
-                var levelGo = CreateUIText(slotGo.transform, "Level", "", Vector2.zero, new Vector2(SkillIconSize, 24f));
-                var levelRt = levelGo.GetComponent<RectTransform>();
-                levelRt.anchorMin = new Vector2(1f, 0f);
-                levelRt.anchorMax = new Vector2(1f, 0f);
-                levelRt.pivot = new Vector2(1f, 0f);
-                levelRt.anchoredPosition = Vector2.zero;
-                levelRt.sizeDelta = new Vector2(48f, 34f);
-                var levelText = levelGo.GetComponent<Text>();
-                levelText.fontSize = 28;
-                levelText.fontStyle = FontStyle.Bold;
-                levelText.alignment = TextAnchor.LowerRight;
+                var emptyGo = CreateUIText(slotGo.transform, "Empty", "+", Vector2.zero, new Vector2(ItemSlotIconSize, ItemSlotIconSize));
+                var emptyRt = emptyGo.GetComponent<RectTransform>();
+                emptyRt.anchorMin = new Vector2(0f, 1f);
+                emptyRt.anchorMax = new Vector2(1f, 1f);
+                emptyRt.pivot = new Vector2(0.5f, 1f);
+                emptyRt.anchoredPosition = Vector2.zero;
+                emptyRt.sizeDelta = new Vector2(0f, ItemSlotIconSize);
+                var emptyText = emptyGo.GetComponent<Text>();
+                emptyText.alignment = TextAnchor.MiddleCenter;
+                emptyText.fontSize = 40;
+                emptyText.color = new Color(1f, 1f, 1f, 0.4f);
 
-                icons[i] = iconImg;
-                levels[i] = levelText;
+                var nameGo = CreateUIText(slotGo.transform, "Name", "", Vector2.zero, new Vector2(ItemSlotIconSize, 32f));
+                var nameRt = nameGo.GetComponent<RectTransform>();
+                nameRt.anchorMin = new Vector2(0.5f, 0f);
+                nameRt.anchorMax = new Vector2(0.5f, 0f);
+                nameRt.pivot = new Vector2(0.5f, 0f);
+                nameRt.anchoredPosition = Vector2.zero;
+                var nameText = nameGo.GetComponent<Text>();
+                nameText.fontSize = 20;
+                nameText.alignment = TextAnchor.UpperCenter;
+
+                var slotUI = slotGo.AddComponent<ItemSkillSlotUI>();
+                var so = new SerializedObject(slotUI);
+                so.FindProperty("loadout").objectReferenceValue = loadout;
+                so.FindProperty("inventoryUI").objectReferenceValue = inventoryUI;
+                so.FindProperty("slotIndex").intValue = i;
+                so.FindProperty("icon").objectReferenceValue = iconImg;
+                so.FindProperty("nameLabel").objectReferenceValue = nameText;
+                so.FindProperty("emptyState").objectReferenceValue = emptyGo;
+                so.ApplyModifiedProperties();
             }
+        }
 
-            return (icons, levels);
+        // Full-screen dim panel with a title, a close button and a scrollable
+        // vertical list (viewport + content, driven by a VerticalLayoutGroup +
+        // ContentSizeFitter) that ItemInventoryUI populates with entry
+        // instances at runtime. Returns the panel and the list's content
+        // transform (what entries get parented under).
+        private static (GameObject panel, Transform listParent) CreateItemInventoryPanel(Transform canvasParent)
+        {
+            var panelGo = new GameObject("ItemInventoryPanel", typeof(RectTransform));
+            panelGo.transform.SetParent(canvasParent, false);
+            SetStretch(panelGo.GetComponent<RectTransform>());
+            panelGo.AddComponent<Image>().color = new Color(0f, 0f, 0f, 0.8f);
+
+            var titleGo = CreateUIText(panelGo.transform, "Title", "인벤토리", Vector2.zero, new Vector2(500f, 70f));
+            var titleRt = titleGo.GetComponent<RectTransform>();
+            titleRt.anchorMin = new Vector2(0.5f, 1f);
+            titleRt.anchorMax = new Vector2(0.5f, 1f);
+            titleRt.pivot = new Vector2(0.5f, 1f);
+            titleRt.anchoredPosition = new Vector2(0f, -60f);
+            var titleText = titleGo.GetComponent<Text>();
+            titleText.fontSize = 44;
+            titleText.fontStyle = FontStyle.Bold;
+            titleText.alignment = TextAnchor.MiddleCenter;
+
+            var (closeButton, closeLabel) = CreateButton(panelGo.transform, "CloseButton", Vector2.zero, new Vector2(100f, 100f));
+            var closeRt = closeButton.GetComponent<RectTransform>();
+            closeRt.anchorMin = new Vector2(1f, 1f);
+            closeRt.anchorMax = new Vector2(1f, 1f);
+            closeRt.pivot = new Vector2(1f, 1f);
+            closeRt.anchoredPosition = new Vector2(-24f, -24f);
+            closeLabel.text = "X";
+            closeLabel.fontSize = 40;
+
+            var scrollGo = new GameObject("ScrollView", typeof(RectTransform));
+            scrollGo.transform.SetParent(panelGo.transform, false);
+            var scrollRt = scrollGo.GetComponent<RectTransform>();
+            scrollRt.anchorMin = new Vector2(0.5f, 0f);
+            scrollRt.anchorMax = new Vector2(0.5f, 1f);
+            scrollRt.pivot = new Vector2(0.5f, 0.5f);
+            scrollRt.anchoredPosition = new Vector2(0f, -60f);
+            scrollRt.sizeDelta = new Vector2(980f, -320f);
+
+            var viewportGo = new GameObject("Viewport", typeof(RectTransform));
+            viewportGo.transform.SetParent(scrollGo.transform, false);
+            SetStretch(viewportGo.GetComponent<RectTransform>());
+            viewportGo.AddComponent<Image>().color = new Color(0f, 0f, 0f, 0.01f);
+            viewportGo.AddComponent<RectMask2D>();
+
+            var contentGo = new GameObject("Content", typeof(RectTransform));
+            contentGo.transform.SetParent(viewportGo.transform, false);
+            var contentRt = contentGo.GetComponent<RectTransform>();
+            contentRt.anchorMin = new Vector2(0f, 1f);
+            contentRt.anchorMax = new Vector2(1f, 1f);
+            contentRt.pivot = new Vector2(0.5f, 1f);
+            contentRt.anchoredPosition = Vector2.zero;
+            contentRt.sizeDelta = Vector2.zero;
+
+            var vlg = contentGo.AddComponent<VerticalLayoutGroup>();
+            vlg.spacing = 16f;
+            vlg.childAlignment = TextAnchor.UpperCenter;
+            vlg.childControlWidth = true;
+            vlg.childControlHeight = false;
+            vlg.childForceExpandWidth = true;
+            vlg.childForceExpandHeight = false;
+
+            contentGo.AddComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+            var scrollRect = scrollGo.AddComponent<ScrollRect>();
+            scrollRect.horizontal = false;
+            scrollRect.vertical = true;
+            scrollRect.viewport = viewportGo.GetComponent<RectTransform>();
+            scrollRect.content = contentRt;
+            scrollRect.movementType = ScrollRect.MovementType.Clamped;
+
+            return (panelGo, contentGo.transform);
+        }
+
+        // One inventory row: icon, name, skill description and an "equipped"
+        // badge that ItemInventoryEntryUI.Bind toggles per item. Saved as a
+        // prefab so ItemInventoryUI can Instantiate one per owned item.
+        private static GameObject CreateItemEntryPrefab(Sprite placeholderIcon)
+        {
+            var go = new GameObject("ItemInventoryEntry", typeof(RectTransform));
+            go.GetComponent<RectTransform>().sizeDelta = new Vector2(920f, 140f);
+
+            var bgImg = go.AddComponent<Image>();
+            bgImg.color = new Color(1f, 1f, 1f, 0.08f);
+            var button = go.AddComponent<Button>();
+            button.targetGraphic = bgImg;
+            go.AddComponent<LayoutElement>().preferredHeight = 140f;
+
+            var iconGo = new GameObject("Icon", typeof(RectTransform));
+            iconGo.transform.SetParent(go.transform, false);
+            var iconRt = iconGo.GetComponent<RectTransform>();
+            iconRt.anchorMin = new Vector2(0f, 0.5f);
+            iconRt.anchorMax = new Vector2(0f, 0.5f);
+            iconRt.pivot = new Vector2(0f, 0.5f);
+            iconRt.anchoredPosition = new Vector2(20f, 0f);
+            iconRt.sizeDelta = new Vector2(100f, 100f);
+            var iconImg = iconGo.AddComponent<Image>();
+            iconImg.sprite = placeholderIcon;
+
+            var nameGo = CreateUIText(go.transform, "Name", "", Vector2.zero, new Vector2(680f, 44f));
+            var nameRt = nameGo.GetComponent<RectTransform>();
+            nameRt.anchorMin = new Vector2(0f, 1f);
+            nameRt.anchorMax = new Vector2(0f, 1f);
+            nameRt.pivot = new Vector2(0f, 1f);
+            nameRt.anchoredPosition = new Vector2(140f, -16f);
+            var nameText = nameGo.GetComponent<Text>();
+            nameText.fontSize = 32;
+            nameText.fontStyle = FontStyle.Bold;
+
+            var descGo = CreateUIText(go.transform, "Description", "", Vector2.zero, new Vector2(680f, 70f));
+            var descRt = descGo.GetComponent<RectTransform>();
+            descRt.anchorMin = new Vector2(0f, 1f);
+            descRt.anchorMax = new Vector2(0f, 1f);
+            descRt.pivot = new Vector2(0f, 1f);
+            descRt.anchoredPosition = new Vector2(140f, -62f);
+            var descText = descGo.GetComponent<Text>();
+            descText.fontSize = 22;
+            descText.color = new Color(1f, 1f, 1f, 0.75f);
+
+            var badgeGo = new GameObject("EquippedBadge", typeof(RectTransform));
+            badgeGo.transform.SetParent(go.transform, false);
+            var badgeRt = badgeGo.GetComponent<RectTransform>();
+            badgeRt.anchorMin = new Vector2(1f, 0.5f);
+            badgeRt.anchorMax = new Vector2(1f, 0.5f);
+            badgeRt.pivot = new Vector2(1f, 0.5f);
+            badgeRt.anchoredPosition = new Vector2(-20f, 0f);
+            badgeRt.sizeDelta = new Vector2(140f, 50f);
+            badgeGo.AddComponent<Image>().color = new Color(0.3f, 0.85f, 0.4f, 0.9f);
+
+            var badgeLabelGo = CreateUIText(badgeGo.transform, "Label", "장착중", Vector2.zero, new Vector2(140f, 50f));
+            SetStretch(badgeLabelGo.GetComponent<RectTransform>());
+            var badgeLabelText = badgeLabelGo.GetComponent<Text>();
+            badgeLabelText.alignment = TextAnchor.MiddleCenter;
+            badgeLabelText.fontSize = 22;
+            badgeLabelText.color = Color.black;
+
+            var entryUI = go.AddComponent<ItemInventoryEntryUI>();
+            var entrySO = new SerializedObject(entryUI);
+            entrySO.FindProperty("icon").objectReferenceValue = iconImg;
+            entrySO.FindProperty("nameLabel").objectReferenceValue = nameText;
+            entrySO.FindProperty("descriptionLabel").objectReferenceValue = descText;
+            entrySO.FindProperty("equippedBadge").objectReferenceValue = badgeGo;
+            entrySO.ApplyModifiedProperties();
+
+            return SaveAsPrefabAndDestroy(go, $"{PrefabFolder}/ItemInventoryEntry.prefab");
         }
 
         // --- Top bar: pause button / icon counter ------------------------------

@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: 9855f226cd8152d4e99085272aceede6
+timeCreated: 1518248475
+licenseType: Store
+ShaderImporter:
+  defaultTextures: []
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 84992
+  packageName: Haon SD series Bundle
+  packageVersion: 3.1
+  assetPath: Assets/SD Unity-Chan Haon Custom/Shader/Unity-chan Toon Shader Ver 2.0.6/Tess/Toon_DoubleShadeWithFeather_TransClipping_Tess_StencilMask.shader
+  uploadId: 418201

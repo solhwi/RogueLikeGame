@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: ffadecfbd9e31f840ba4109fea0f0436
+timeCreated: 1518248484
+licenseType: Store
+ShaderImporter:
+  defaultTextures: []
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 84992
+  packageName: Haon SD series Bundle
+  packageVersion: 3.1
+  assetPath: Assets/SD Unity-Chan Haon Custom/Shader/Unity-chan Toon Shader Ver 2.0.6/Tess/Toon_ShadingGradeMap_Tess_Light_StencilMask.shader
+  uploadId: 418201

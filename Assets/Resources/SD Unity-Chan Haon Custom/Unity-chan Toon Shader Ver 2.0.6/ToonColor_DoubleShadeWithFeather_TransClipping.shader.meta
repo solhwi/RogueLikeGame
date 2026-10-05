@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: 369d674ae1ba36249bb00e2f73b0cd10
+timeCreated: 1483233167
+licenseType: Store
+ShaderImporter:
+  defaultTextures: []
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 84992
+  packageName: Haon SD series Bundle
+  packageVersion: 3.1
+  assetPath: Assets/SD Unity-Chan Haon Custom/Shader/Unity-chan Toon Shader Ver 2.0.6/ToonColor_DoubleShadeWithFeather_TransClipping.shader
+  uploadId: 418201

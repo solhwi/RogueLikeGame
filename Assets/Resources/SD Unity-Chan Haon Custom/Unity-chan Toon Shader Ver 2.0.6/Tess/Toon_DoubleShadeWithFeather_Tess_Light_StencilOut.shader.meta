@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: 7e7690a767a07da4f943439680e70db8
+timeCreated: 1518248472
+licenseType: Store
+ShaderImporter:
+  defaultTextures: []
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 84992
+  packageName: Haon SD series Bundle
+  packageVersion: 3.1
+  assetPath: Assets/SD Unity-Chan Haon Custom/Shader/Unity-chan Toon Shader Ver 2.0.6/Tess/Toon_DoubleShadeWithFeather_Tess_Light_StencilOut.shader
+  uploadId: 418201

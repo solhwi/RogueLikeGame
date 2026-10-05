@@ -20,6 +20,7 @@ namespace RogueLike.Enemies
         [SerializeField] private EnemyTier tier;
         [SerializeField] private GameObject experienceGemPrefab;
         [SerializeField] private int experienceReward = 1;
+        [SerializeField] private int goldReward = 0;
 
         public string EnemyId => enemyId;
         public GameObject Prefab => prefab;
@@ -29,5 +30,6 @@ namespace RogueLike.Enemies
         public EnemyTier Tier => tier;
         public GameObject ExperienceGemPrefab => experienceGemPrefab;
         public int ExperienceReward => experienceReward;
+        public int GoldReward => goldReward;
     }
 }

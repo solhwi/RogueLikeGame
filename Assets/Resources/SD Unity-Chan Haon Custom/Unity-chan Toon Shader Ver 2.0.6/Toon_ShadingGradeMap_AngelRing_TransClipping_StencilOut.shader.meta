@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: d1e11a558d143f14c864edf263332764
+timeCreated: 1488638448
+licenseType: Store
+ShaderImporter:
+  defaultTextures: []
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 84992
+  packageName: Haon SD series Bundle
+  packageVersion: 3.1
+  assetPath: Assets/SD Unity-Chan Haon Custom/Shader/Unity-chan Toon Shader Ver 2.0.6/Toon_ShadingGradeMap_AngelRing_TransClipping_StencilOut.shader
+  uploadId: 418201

@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
 using RogueLike.Core;
-using RogueLike.Items;
 
 namespace RogueLike.Managers
 {
@@ -11,19 +10,16 @@ namespace RogueLike.Managers
     public class SaveData
     {
         public int gold;
-        public List<string> ownedEquipmentIds = new List<string>();
-        public List<int> ownedEquipmentRarities = new List<int>();
         public List<string> unlockedChapterIds = new List<string>();
     }
 
-    // Persists what survives between runs (currency, owned gear, chapter
-    // unlocks) to a JSON file.
-    // Restoring EquipmentInstance objects from ownedEquipmentIds needs an
-    // id -> EquipmentDefinition lookup (an EquipmentDatabase asset) that
-    // doesn't exist yet — left as a follow-up.
+    // Persists what survives between runs (currency, chapter unlocks) to a
+    // JSON file.
     public class MetaProgressionManager : Singleton<MetaProgressionManager>
     {
         private const string SaveFileName = "save.json";
+
+        public event Action<int> OnGoldChanged;
 
         public int Gold { get; private set; }
 
@@ -41,6 +37,7 @@ namespace RogueLike.Managers
             Gold += amount;
             data.gold = Gold;
             Save();
+            OnGoldChanged?.Invoke(Gold);
         }
 
         public bool SpendGold(int amount)
@@ -53,21 +50,8 @@ namespace RogueLike.Managers
             Gold -= amount;
             data.gold = Gold;
             Save();
+            OnGoldChanged?.Invoke(Gold);
             return true;
-        }
-
-        public void PersistEquipment(IReadOnlyList<EquipmentInstance> equipment)
-        {
-            data.ownedEquipmentIds.Clear();
-            data.ownedEquipmentRarities.Clear();
-
-            foreach (var item in equipment)
-            {
-                data.ownedEquipmentIds.Add(item.Definition.EquipmentId);
-                data.ownedEquipmentRarities.Add((int)item.Rarity);
-            }
-
-            Save();
         }
 
         private void Save()

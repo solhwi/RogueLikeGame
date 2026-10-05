@@ -1,5 +1,6 @@
 using UnityEngine;
 using RogueLike.Combat;
+using RogueLike.Items;
 
 namespace RogueLike.Player
 {
@@ -19,7 +20,7 @@ namespace RogueLike.Player
 
         private Rigidbody2D rb;
         private PlayerInputHandler input;
-        private PlayerSkillLoadout loadout;
+        private ItemSkillLoadout loadout;
         private Health health;
         private float knockbackTimer;
 
@@ -30,7 +31,7 @@ namespace RogueLike.Player
         {
             rb = GetComponent<Rigidbody2D>();
             input = GetComponent<PlayerInputHandler>();
-            loadout = GetComponent<PlayerSkillLoadout>();
+            loadout = GetComponent<ItemSkillLoadout>();
             health = GetComponent<Health>();
         }
 

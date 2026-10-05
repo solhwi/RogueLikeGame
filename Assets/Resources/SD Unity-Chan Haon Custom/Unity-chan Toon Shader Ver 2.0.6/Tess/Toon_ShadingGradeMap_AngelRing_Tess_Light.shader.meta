@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: a1449ab672051624ca3160737b630f5e
+timeCreated: 1518248476
+licenseType: Store
+ShaderImporter:
+  defaultTextures: []
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 84992
+  packageName: Haon SD series Bundle
+  packageVersion: 3.1
+  assetPath: Assets/SD Unity-Chan Haon Custom/Shader/Unity-chan Toon Shader Ver 2.0.6/Tess/Toon_ShadingGradeMap_AngelRing_Tess_Light.shader
+  uploadId: 418201

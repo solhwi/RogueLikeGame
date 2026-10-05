@@ -1,5 +1,6 @@
 using UnityEngine;
 using RogueLike.Combat;
+using RogueLike.Items;
 
 namespace RogueLike.Player
 {
@@ -8,11 +9,11 @@ namespace RogueLike.Player
         [SerializeField] private float baseRadius = 2f;
         [SerializeField] private LayerMask lootLayer;
 
-        private PlayerSkillLoadout loadout;
+        private ItemSkillLoadout loadout;
 
         private void Awake()
         {
-            loadout = GetComponent<PlayerSkillLoadout>();
+            loadout = GetComponent<ItemSkillLoadout>();
         }
 
         private void Update()
