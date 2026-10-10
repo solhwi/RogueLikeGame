@@ -3,12 +3,16 @@ using UnityEngine;
 
 namespace RogueLike.Combat
 {
-    // Blinks the sprite while Health's post-hit invulnerability window is
+    // Blinks the visual while Health's post-hit invulnerability window is
     // active, so getting hit is visible even though damage is blocked.
+    // Renderer rather than SpriteRenderer specifically: the player's visual
+    // is a MeshRenderer (quad fed by CharacterRenderView) while enemies
+    // still use a plain SpriteRenderer — both have Renderer.enabled, which
+    // is all this needs.
     [RequireComponent(typeof(Health))]
     public class DamageFlicker : MonoBehaviour
     {
-        [SerializeField] private SpriteRenderer spriteRenderer;
+        [SerializeField] private Renderer targetRenderer;
         [SerializeField] private float flickerInterval = 0.08f;
 
         private Health health;
@@ -17,9 +21,9 @@ namespace RogueLike.Combat
         private void Awake()
         {
             health = GetComponent<Health>();
-            if (spriteRenderer == null)
+            if (targetRenderer == null)
             {
-                spriteRenderer = GetComponent<SpriteRenderer>();
+                targetRenderer = GetComponent<Renderer>();
             }
         }
 
@@ -44,11 +48,11 @@ namespace RogueLike.Combat
         {
             while (health.IsInvulnerable)
             {
-                spriteRenderer.enabled = !spriteRenderer.enabled;
+                targetRenderer.enabled = !targetRenderer.enabled;
                 yield return new WaitForSeconds(flickerInterval);
             }
 
-            spriteRenderer.enabled = true;
+            targetRenderer.enabled = true;
             flickerRoutine = null;
         }
 
@@ -60,9 +64,9 @@ namespace RogueLike.Combat
                 flickerRoutine = null;
             }
 
-            if (spriteRenderer != null)
+            if (targetRenderer != null)
             {
-                spriteRenderer.enabled = true;
+                targetRenderer.enabled = true;
             }
         }
     }

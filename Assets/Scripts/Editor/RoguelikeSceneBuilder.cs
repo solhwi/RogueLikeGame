@@ -9,6 +9,7 @@ using UnityEngine.UI;
 using RogueLike.Core;
 using RogueLike.Player;
 using RogueLike.Combat;
+using RogueLike.CharacterRendering;
 using RogueLike.Items;
 using RogueLike.Level;
 using RogueLike.Enemies;
@@ -61,7 +62,6 @@ namespace RogueLike.EditorTools
             int enemyLayer = EnsureLayer("Enemy");
             int lootLayer = EnsureLayer("Loot");
 
-            var playerSprite = CreateAndSaveSquareSprite("RoguelikePlayerSprite", new Color(0.20f, 0.55f, 0.95f));
             var enemySprite = CreateAndSaveSquareSprite("RoguelikeEnemySprite", new Color(0.55f, 0.85f, 0.25f));
             var runnerSprite = CreateAndSaveSquareSprite("RoguelikeRunnerSprite", new Color(0.95f, 0.75f, 0.15f));
             var bruteSprite = CreateAndSaveSquareSprite("RoguelikeBruteSprite", new Color(0.55f, 0.25f, 0.15f));
@@ -161,10 +161,33 @@ namespace RogueLike.EditorTools
             var playerGo = new GameObject("Player");
             playerGo.tag = "Player";
 
-            var playerSr = playerGo.AddComponent<SpriteRenderer>();
-            playerSr.sprite = playerSprite;
-            playerSr.sharedMaterial = GetSpriteMaterial();
-            playerSr.sortingOrder = 10;
+            // Visual: a quad fed by CharacterRenderView instead of a flat
+            // SpriteRenderer — the 3D CharacterModule rig renders off-screen
+            // (see ObjectCameraManager) and gets copied onto this quad every
+            // frame, so it looks like an ordinary 2D sprite from here.
+            // Unscaled Quad is 1x1 world unit, same footprint the old 4x4px
+            // sprite had at its pixels-per-unit, so collider/visual size is
+            // unchanged.
+            var playerMeshFilter = playerGo.AddComponent<MeshFilter>();
+            playerMeshFilter.sharedMesh = AssetDatabase.GetBuiltinExtraResource<Mesh>("Quad.fbx");
+
+            var playerRenderer = playerGo.AddComponent<MeshRenderer>();
+            playerRenderer.sharedMaterial = GetSpriteMaterial();
+            playerRenderer.sortingOrder = 10;
+            playerRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            playerRenderer.receiveShadows = false;
+
+            playerGo.AddComponent<MeshRenderer2D>();
+
+            var characterPrefabAsset = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Bundles/Prefabs/Character.prefab");
+            var characterRenderView = playerGo.AddComponent<CharacterRenderView>();
+            var characterRenderViewSO = new SerializedObject(characterRenderView);
+            characterRenderViewSO.FindProperty("originPrefab").objectReferenceValue = characterPrefabAsset;
+            // Matches the orientation both source projects (CharacterDemo's
+            // Character.prefab and SebamoGameClient's MyPlayerCharacter)
+            // already used for this same rig — not a guess.
+            characterRenderViewSO.FindProperty("spawnLocalRot").vector3Value = new Vector3(15f, 150f, -15f);
+            characterRenderViewSO.ApplyModifiedProperties();
 
             var playerRb = playerGo.AddComponent<Rigidbody2D>();
             playerRb.gravityScale = 0f;
@@ -174,7 +197,7 @@ namespace RogueLike.EditorTools
             var playerHealth = playerGo.AddComponent<Health>();
 
             var playerFlicker = playerGo.AddComponent<DamageFlicker>();
-            new SerializedObject(playerFlicker).ApplySpriteRenderer(playerSr);
+            new SerializedObject(playerFlicker).ApplyFlickerRenderer(playerRenderer);
 
             playerGo.AddComponent<PlayerInputHandler>();
             playerGo.AddComponent<PlayerController>();
@@ -182,6 +205,25 @@ namespace RogueLike.EditorTools
 
             var lootMagnet = playerGo.GetComponent<LootMagnet>();
             new SerializedObject(lootMagnet).ApplyLootLayer(lootLayer);
+
+            // --- Item = appearance bridge (see Items/CharacterAppearanceAdapter) ---
+            var characterInventoryAsset = AssetDatabase.LoadAssetAtPath<CharacterEquipmentInventory>("Assets/Bundles/Datas/CharacterEquipmentInventory.asset");
+            var characterResourceSystemAsset = AssetDatabase.LoadAssetAtPath<CharacterResourceSystem>("Assets/Bundles/Datas/CharacterResourceSystem.asset");
+
+            var appearanceAdapter = playerGo.AddComponent<CharacterAppearanceAdapter>();
+            var appearanceAdapterSO = new SerializedObject(appearanceAdapter);
+            appearanceAdapterSO.FindProperty("inventory").objectReferenceValue = characterInventoryAsset;
+            appearanceAdapterSO.FindProperty("renderView").objectReferenceValue = characterRenderView;
+            appearanceAdapterSO.ApplyModifiedProperties();
+
+            // Preloads the Addressable character parts, then calls
+            // characterRenderView.Initialize() once that's done — see
+            // CharacterPreloader's own comment for why the order matters.
+            var characterPreloader = playerGo.AddComponent<CharacterPreloader>();
+            var characterPreloaderSO = new SerializedObject(characterPreloader);
+            characterPreloaderSO.FindProperty("resourceSystem").objectReferenceValue = characterResourceSystemAsset;
+            characterPreloaderSO.FindProperty("renderView").objectReferenceValue = characterRenderView;
+            characterPreloaderSO.ApplyModifiedProperties();
 
             // --- Item-skill loadout (item = skill; see Items/*) ---
             // Drives every equipped item's own behavior, and is also where
@@ -254,6 +296,7 @@ namespace RogueLike.EditorTools
             new GameObject("ExperienceManager").AddComponent<ExperienceManager>();
             new GameObject("KillCounter").AddComponent<KillCounter>();
             new GameObject("MetaProgressionManager").AddComponent<MetaProgressionManager>();
+            new GameObject("ObjectCameraManager").AddComponent<ObjectCameraManager>();
 
             // --- UI ---
             var canvasGo = new GameObject("Canvas");
@@ -1313,9 +1356,9 @@ namespace RogueLike.EditorTools
             so.ApplyModifiedProperties();
         }
 
-        private static void ApplySpriteRenderer(this SerializedObject so, SpriteRenderer spriteRenderer)
+        private static void ApplyFlickerRenderer(this SerializedObject so, Renderer targetRenderer)
         {
-            so.FindProperty("spriteRenderer").objectReferenceValue = spriteRenderer;
+            so.FindProperty("targetRenderer").objectReferenceValue = targetRenderer;
             so.ApplyModifiedProperties();
         }
 
